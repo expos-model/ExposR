@@ -1,0 +1,18 @@
+Package: ExposR
+Title: Models topopgrahic exposure to hurricane winds
+Version: 1.01
+Date: 2021-11-15
+Authors@R: c( person("Emery", "Boose", role = c("aut", "cre"),
+                      email = "boose@fas.harvard.edu"),
+              person("President and Fellows of Harvard College", role = "cph"))
+Description: Models exposure to hurricane winds as a function of local
+    topography, wind direction, and wind inflection angle.
+Depends: R (>= 4.0.0)
+License: GPL-3
+Encoding: UTF-8
+LazyData: true
+Imports: 
+    raster
+URL: https://github.com/expos-model/ExposR
+BugReports: https://github.com/expos-model/ExposR/issues
+RoxygenNote: 7.1.2
