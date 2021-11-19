@@ -37,7 +37,6 @@
 # Required packages:
 #  raster
 
-
 ### INTERNAL FUNCTIONS ####################################
 
 
@@ -281,10 +280,13 @@ west_north_west <- function(wind_direction, inflection_angle, t_dir, save, conso
             expos_r <- raster::flip(xx, direction="x")
         }
 
+        # copy coordinate reference system from dem
+        raster::crs(expos_r) <- raster::crs(dem_r)
+
         # save modeled values in a Geotiff file
         expos_file = paste(cwd, "/expos-", formatC(wind_direction, width=3, flag="0"), "-", 
             formatC(inflection_angle, width=2, flag="0"), ".tif", sep="")
-    
+
         raster::writeRaster(expos_r, expos_file, overwrite=TRUE)
     
         if (console == TRUE) {
@@ -460,10 +462,13 @@ north_north_west <- function(wind_direction, inflection_angle, t_dir, save, cons
             expos_r <- raster::flip(xx, direction="x")
         }
 
+        # copy coordinate reference system from dem
+        raster::crs(expos_r) <- raster::crs(dem_r)
+
         # save modeled values in a Geotiff file
         expos_file = paste(cwd, "/expos-", formatC(wind_direction, width=3, flag="0"), "-", 
             formatC(inflection_angle, width=2, flag="0"), ".tif", sep="")
-    
+
         raster::writeRaster(expos_r, expos_file, overwrite=TRUE)
     
         if (console == TRUE) {
