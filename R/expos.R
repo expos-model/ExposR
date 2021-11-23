@@ -259,30 +259,30 @@ west_north_west <- function(wind_direction, inflection_angle, t_dir, save, conso
     mask[mask != 0] <- 1
     zz <- mask * expos_m
 
+    # create raster
+    rr <- raster::raster(nrows=nrows, ncols=ncols, xmn=xmn, xmx=xmx, 
+        ymn=ymn, ymx=ymx, vals=zz)
+
+    # flip raster as needed
+    if (row_order == TRUE && col_order == TRUE) {
+        expos_r <- rr
+
+    } else if (row_order == FALSE && col_order == TRUE) {
+        expos_r <- raster::flip(rr, direction="y")
+
+    } else if (row_order == TRUE && col_order == FALSE) {
+        expos_r <- raster::flip(rr, direction="x")
+
+    } else if (row_order == FALSE && col_order == FALSE) {
+        xx  <- raster::flip(rr, direction="y")
+        expos_r <- raster::flip(xx, direction="x")
+    }
+
+    # copy coordinate reference system from dem
+    raster::crs(expos_r) <- raster::crs(dem_r)
+
     # output
     if (save == TRUE) {
-        # create raster
-        rr <- raster::raster(nrows=nrows, ncols=ncols, xmn=xmn, xmx=xmx, 
-            ymn=ymn, ymx=ymx, vals=zz)
-
-        # flip raster as needed
-        if (row_order == TRUE && col_order == TRUE) {
-            expos_r <- rr
-
-        } else if (row_order == FALSE && col_order == TRUE) {
-            expos_r <- raster::flip(rr, direction="y")
-
-        } else if (row_order == TRUE && col_order == FALSE) {
-            expos_r <- raster::flip(rr, direction="x")
-
-        } else if (row_order == FALSE && col_order == FALSE) {
-            xx  <- raster::flip(rr, direction="y")
-            expos_r <- raster::flip(xx, direction="x")
-        }
-
-        # copy coordinate reference system from dem
-        raster::crs(expos_r) <- raster::crs(dem_r)
-
         # save modeled values in a Geotiff file
         expos_file = paste(cwd, "/expos-", formatC(wind_direction, width=3, flag="0"), "-", 
             formatC(inflection_angle, width=2, flag="0"), ".tif", sep="")
@@ -293,7 +293,7 @@ west_north_west <- function(wind_direction, inflection_angle, t_dir, save, conso
             cat("\nSaving to", expos_file, "\n")
         }
     }
-  
+     
     # return modeled values as raster
     invisible(expos_r)
 }
@@ -441,30 +441,30 @@ north_north_west <- function(wind_direction, inflection_angle, t_dir, save, cons
     mask[mask != 0] <- 1
     zz <- mask * expos_m
 
+    # create raster
+    rr <- raster::raster(nrows=nrows, ncols=ncols, xmn=xmn, xmx=xmx, 
+        ymn=ymn, ymx=ymx, vals=zz)
+
+    # flip raster as needed
+    if (row_order == TRUE && col_order == TRUE) {
+        expos_r <- rr
+
+    } else if (row_order == FALSE && col_order == TRUE) {
+        expos_r <- raster::flip(rr, direction="y")
+
+    } else if (row_order == TRUE && col_order == FALSE) {
+        expos_r <- raster::flip(rr, direction="x")
+
+    } else if (row_order == FALSE && col_order == FALSE) {
+        xx  <- raster::flip(rr, direction="y")
+        expos_r <- raster::flip(xx, direction="x")
+    }
+
+    # copy coordinate reference system from dem
+    raster::crs(expos_r) <- raster::crs(dem_r)
+
     # output
     if (save == TRUE) {
-        # create raster
-        rr <- raster::raster(nrows=nrows, ncols=ncols, xmn=xmn, xmx=xmx, 
-            ymn=ymn, ymx=ymx, vals=zz)
-
-        # flip raster as needed
-        if (row_order == TRUE && col_order == TRUE) {
-            expos_r <- rr
-
-        } else if (row_order == FALSE && col_order == TRUE) {
-            expos_r <- raster::flip(rr, direction="y")
-
-        } else if (row_order == TRUE && col_order == FALSE) {
-            expos_r <- raster::flip(rr, direction="x")
-
-        } else if (row_order == FALSE && col_order == FALSE) {
-            xx  <- raster::flip(rr, direction="y")
-            expos_r <- raster::flip(xx, direction="x")
-        }
-
-        # copy coordinate reference system from dem
-        raster::crs(expos_r) <- raster::crs(dem_r)
-
         # save modeled values in a Geotiff file
         expos_file = paste(cwd, "/expos-", formatC(wind_direction, width=3, flag="0"), "-", 
             formatC(inflection_angle, width=2, flag="0"), ".tif", sep="")
@@ -573,6 +573,161 @@ expos_model <- function(wind_direction, inflection_angle, save=TRUE, console=TRU
     }
 }
 
+#' @description
+#' expos_damage uses output from Hurrecon and Expos to create a raster
+#' of hurricane wind damage where topograhic exposure at each location
+#' is determined by peak wind direction. Protected areas are assigned 
+#' None if the predicted damage is EF0 or lower and EF0 if the predicted 
+#' damage is EF1 or higher. This function requires a hurricane tif file 
+#' created by Hurrecon, eight exposure files created by Expos (N, NE, E, 
+#' etc), and a reprojection file in csv format that contains lat long 
+#' coordinates for the lower left and upper right corners of the digital 
+#' elevation model.
+#' @param hurricane hurricane name (as appears in tif file)
+#' @param inflection_angle inflection angle (degrees)
+#' @param save whether to save results to file
+#' @param console whether to display messages in console
+#' @return raster of landscape-level wind damage
+#' @export
+#' @rdname modeling
+
+expos_damage <- function(hurricane, inflection_angle, save=TRUE, console=TRUE) {
+    # get current working directory
+    cwd <- getwd()
+
+    # read exposure files
+    ee_r <- list()
+
+    for (i in 1:8) {
+        wind_direction <- (i-1)*45
+
+        expos_file <- paste(cwd, "/expos-", formatC(wind_direction, width=3, flag="0"), "-", 
+            formatC(inflection_angle, width=2, flag="0"), ".tif", sep="")
+    
+        ee_r[[i]] <- raster::raster(expos_file)
+    }
+
+    # read dem file
+    dem_file <- paste(cwd, "/dem.tif", sep="")
+    dem_r <- raster::raster(dem_file)
+
+    dem_rows <- dim(dem_r)[1]
+    dem_cols <- dim(dem_r)[2]
+
+    dem_xmn <- raster::extent(dem_r)[1]
+    dem_xmx <- raster::extent(dem_r)[2]
+    dem_ymn <- raster::extent(dem_r)[3]
+    dem_ymx <- raster::extent(dem_r)[4]
+
+    # read hurrecon file
+    hur_file <- paste(cwd, "/", hurricane, ".tif", sep="")
+    ff_r <- raster::raster(hur_file, 2)  # enhanced Fujita scale
+    cc_r <- raster::raster(hur_file, 4)  # cardinal wind direction (1-8)
+
+    hur_rows <- dim(ff_r)[1]
+    hur_cols <- dim(ff_r)[2]
+
+    hur_xmn <- raster::extent(ff_r)[1]
+    hur_xmx <- raster::extent(ff_r)[2]
+    hur_ymn <- raster::extent(ff_r)[3]
+    hur_ymx <- raster::extent(ff_r)[4]
+
+    # read reproject file
+    reproject.file <- "reproject.csv"
+    rp <- read.csv(reproject.file, header=TRUE)
+
+    lat_0 <- rp$lat_0
+    lon_0 <- rp$lon_0
+    lat_1 <- rp$lat_1
+    lon_1 <- rp$lon_1
+
+    # convert rasters to matrices
+    ee_m <- list()
+
+    for (i in 1:8) {
+        ee_m[[i]] <- raster::as.matrix(ee_r[[i]])
+    }
+
+    dem_m <- raster::as.matrix(dem_r)
+    ff_m  <- raster::as.matrix(ff_r)
+    cc_m  <- raster::as.matrix(cc_r)
+
+    # create damage matrix
+    dam_m <- dem_m
+    dam_m[dam_m != 0] <- 1
+
+    # calculate exposure values
+    for (i in 1:dem_rows) {
+        # display every 10th row number
+        if (i %% 10 == 0) {
+            cat("\rrow", i)
+        }
+
+        for (j in 1:dem_cols) {
+            # get lat long coordinates
+            hur_x <- lon_0 + (lon_1 - lon_0)*(j - 0.5)/dem_cols
+            hur_y <- lat_1 - (lat_1 - lat_0)*(i - 0.5)/dem_rows
+
+            # get row & col in hurricane file (note: row 1 = top of raster)
+            hur_row <- ceiling(hur_rows - hur_rows*(hur_y - hur_ymn)/(hur_ymx - hur_ymn))
+            hur_col <- ceiling(hur_cols*(hur_x - hur_xmn)/(hur_xmx - hur_xmn))
+
+            # skip missing values in dem
+            if (dem_m[i, j] != 0) {
+                # get peak wind direction (1-8)
+                pdir <- cc_m[hur_row, hur_col]
+
+                if (pdir == 0) {
+                    # no damage if no peak wind direction
+                    dam_m[i, j] <- 1
+
+                } else {
+                    # get topographic exposure
+                    exposure <- ee_m[[pdir]][i, j]
+                    # get fujita scale damage (0-7)
+                    damage <- ff_m[hur_row, hur_col]
+
+                    # protected
+                    if (exposure == 1) {
+                        # no damage if less than EF1
+                        if (damage <= 2) {
+                            dam_m[i, j] <- 1
+
+                        # EF0 if EF1 to EF5
+                        } else {
+                            dam_m[i, j] <- 2
+                        }    
+
+                    # exposed
+                    } else {
+                        dam_m[i, j] <- damage
+                    }
+                }
+            }
+        }
+    }
+
+    # create raster of modeled results
+    dam_r <- raster::raster(nrows=dem_rows, ncols=dem_cols, xmn=dem_xmn, xmx=dem_xmx, 
+        ymn=dem_ymn, ymx=dem_ymx, vals=dam_m)
+
+    # copy coordinate reference system from dem
+    raster::crs(dam_r) <- raster::crs(dem_r)
+
+    if (save == TRUE) {
+        # save modeled results in GeoTiff file
+        dam_file <- paste(cwd, "/", hurricane, "-damage.tif", sep="")
+        raster::writeRaster(dam_r, dam_file, overwrite=TRUE)
+
+        if (console == TRUE) {
+            cat("\nSaving to", dam_file, "\n")
+        }
+    }
+
+    # return modeled results as raster
+    invisible(dam_r)
+}
+
 
 ### SUMMARIZING FUNCTIONS #################################
 
@@ -677,6 +832,6 @@ expos_plot <- function(filename, type="", title="", col=rev(terrain.colors(255))
         labs <- c("", "None", "EF0", "EF1", "EF2", "EF3", "EF4", "EF5")
         arg <- list(at=vals, labels=labs)
         raster::plot(rr, main=title, axis.args=arg, col=col)
-    }
+    }   
 }
 
