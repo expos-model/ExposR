@@ -637,13 +637,17 @@ expos_summarize <- function(filename, console=TRUE) {
 #' @title
 #' Plotting Functions
 #' @description
-#' expos_plot creates a plot of a specified raster file.
+#' expos_plot creates a plot of a specified raster file. Optional arguments
+#' include plot type, title, and color palette.
 #' @param filename name of input raster file
+#' @param type file type
+#' @param title plot title
+#' @param col color palette
 #' @return no return value
 #' @export
 #' @rdname plotting
 
-expos_plot <- function(filename) {
+expos_plot <- function(filename, type="", title="", col=rev(terrain.colors(255))) {
     # get current working directory
     cwd <- getwd()
  
@@ -655,6 +659,24 @@ expos_plot <- function(filename) {
     # create plot
     par(mar=c(5.1, 4.6, 4.1, 2.1))
 
-    raster::plot(rr, main=filename)
+    if (title == "") {
+        title <- filename
+    }
+
+    if (type == "") {
+        raster::plot(rr, main=title, col=col)
+    
+    } else if (type == "exposure") {
+        vals <- c(0, 1, 2)
+        labs <- c("", "Pro", "Exp")
+        arg <- list(at=vals, labels=labs)
+        raster::plot(rr, main=title, axis.args=arg, col=col)
+
+    } else if (type == "damage") {
+        vals <- c(0, 1, 2, 3, 4, 5, 6, 7)
+        labs <- c("", "None", "EF0", "EF1", "EF2", "EF3", "EF4", "EF5")
+        arg <- list(at=vals, labels=labs)
+        raster::plot(rr, main=title, axis.args=arg, col=col)
+    }
 }
 

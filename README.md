@@ -78,7 +78,7 @@ The expos_plot function creates a plot of a specified raster file.
 expos_set_path("c:/expos/r/mass_30m")
 expos_model(wind_direction=90, inflection_angle=6)
 expos_summarize("dem")
-expos_plot("expos-090-06")
+expos_plot("expos-090-06", type="exposure")
 ```
 
 ## History
