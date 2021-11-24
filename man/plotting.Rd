@@ -4,12 +4,10 @@
 \alias{expos_plot}
 \title{Plotting Functions}
 \usage{
-expos_plot(filename, type = "", title = "", col = rev(terrain.colors(255)))
+expos_plot(filename, title = "", col = rev(terrain.colors(255)))
 }
 \arguments{
 \item{filename}{name of input raster file}
-
-\item{type}{file type}
 
 \item{title}{plot title}
 
@@ -20,5 +18,5 @@ no return value
 }
 \description{
 expos_plot creates a plot of a specified raster file. Optional arguments
-include plot type, title, and color palette.
+include plot title and color palette.
 }

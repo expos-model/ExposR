@@ -583,7 +583,7 @@ expos_model <- function(wind_direction, inflection_angle, save=TRUE, console=TRU
 #' etc), and a reprojection file in csv format that contains lat long 
 #' coordinates for the lower left and upper right corners of the digital 
 #' elevation model.
-#' @param hurricane hurricane name (as appears in tif file)
+#' @param hurricane hurricane name (as it appears in tif file)
 #' @param inflection_angle inflection angle (degrees)
 #' @param save whether to save results to file
 #' @param console whether to display messages in console
@@ -633,8 +633,8 @@ expos_damage <- function(hurricane, inflection_angle, save=TRUE, console=TRUE) {
     hur_ymx <- raster::extent(ff_r)[4]
 
     # read reproject file
-    reproject.file <- "reproject.csv"
-    rp <- read.csv(reproject.file, header=TRUE)
+    reproject_file <- "reproject.csv"
+    rp <- read.csv(reproject_file, header=TRUE)
 
     lat_0 <- rp$lat_0
     lon_0 <- rp$lon_0
@@ -776,7 +776,7 @@ expos_summarize <- function(filename, console=TRUE) {
     st <- paste(st, "Easting: ", round(xmn), " to ", round(xmx), "\n", sep="")
     st <- paste(st, "Cell height: ", round(cell_y), "\n", sep="")
     st <- paste(st, "Cell width: ", round(cell_x), "\n", sep="")
-    st <- paste(st, "Values: ", round(val_min), " to ", round(val_max), "\n", sep="")
+    st <- paste(st, "Values: ", round(val_min, 1), " to ", round(val_max, 1), "\n", sep="")
     
     # display results in console
     if (console == TRUE) {
@@ -793,16 +793,15 @@ expos_summarize <- function(filename, console=TRUE) {
 #' Plotting Functions
 #' @description
 #' expos_plot creates a plot of a specified raster file. Optional arguments
-#' include plot type, title, and color palette.
+#' include plot title and color palette.
 #' @param filename name of input raster file
-#' @param type file type
 #' @param title plot title
 #' @param col color palette
 #' @return no return value
 #' @export
 #' @rdname plotting
 
-expos_plot <- function(filename, type="", title="", col=rev(terrain.colors(255))) {
+expos_plot <- function(filename, title="", col=rev(terrain.colors(255))) {
     # get current working directory
     cwd <- getwd()
  
@@ -814,24 +813,35 @@ expos_plot <- function(filename, type="", title="", col=rev(terrain.colors(255))
     # create plot
     par(mar=c(5.1, 4.6, 4.1, 2.1))
 
-    if (title == "") {
-        title <- filename
-    }
-
-    if (type == "") {
+    if (grepl("dem", filename)) {
+        if (title == "") {
+            title <- "Elevation"
+        }
         raster::plot(rr, main=title, col=col)
     
-    } else if (type == "exposure") {
+    } else if (grepl("expos", filename)) {
+        if (title == "") {
+            title <- filename
+        }
         vals <- c(0, 1, 2)
         labs <- c("", "Pro", "Exp")
         arg <- list(at=vals, labels=labs)
         raster::plot(rr, main=title, axis.args=arg, col=col)
 
-    } else if (type == "damage") {
+    } else if (grepl("damage", filename)) {
+        if (title == "") {
+            title <- filename
+        }
         vals <- c(0, 1, 2, 3, 4, 5, 6, 7)
         labs <- c("", "None", "EF0", "EF1", "EF2", "EF3", "EF4", "EF5")
         arg <- list(at=vals, labels=labs)
         raster::plot(rr, main=title, axis.args=arg, col=col)
-    }   
+    
+    } else {
+        if (title == "") {
+            title <- filename
+        }
+        raster::plot(rr, main=title, col=col)
+    }
 }
 

@@ -18,7 +18,7 @@ expos_damage(hurricane, inflection_angle, save = TRUE, console = TRUE)
 
 \item{console}{whether to display messages in console}
 
-\item{hurricane}{hurricane name (as appears in tif file)}
+\item{hurricane}{hurricane name (as it appears in tif file)}
 }
 \value{
 no return value
