@@ -796,12 +796,12 @@ expos_summarize <- function(filename, console=TRUE) {
 #' include plot title and color palette.
 #' @param filename name of input raster file
 #' @param title plot title
-#' @param col color palette
+#' @param colormap color palette
 #' @return no return value
 #' @export
 #' @rdname plotting
 
-expos_plot <- function(filename, title="", col=rev(terrain.colors(255))) {
+expos_plot <- function(filename, title="", colormap="default") {
     # get current working directory
     cwd <- getwd()
  
@@ -809,7 +809,34 @@ expos_plot <- function(filename, title="", col=rev(terrain.colors(255))) {
     file_path <- paste(cwd, "/", filename, ".tif", sep="")
     check_file_exists(file_path)
     rr <- raster::raster(file_path)
+
+    rr_min <- raster::minValue(rr)
+    rr_max <- raster::maxValue(rr)
  
+    # built-in color palettes
+    if (length(colormap) == 1) {
+        if (colormap == "default") {
+            cmap <- rev(terrain.colors(255))
+    
+        } else if (colormap == "exposure") {
+            cmap <- c("white", "grey", "blue")
+
+        } else if (colormap == "damage") {
+            all_cols <- c("white", "grey", "purple", "blue", "green", "yellow", "orange", "red")
+            cmap <- c(all_cols[rr_min+1])
+
+            if (rr_max > rr_min) {
+                for (i in (rr_min+2):(rr_max+1)) {
+                  cmap <- append(cmap, all_cols[i])
+                }
+            }
+        }
+    
+    # user-specified palette
+    } else {
+        cmap <- colormap
+    }
+
     # create plot
     par(mar=c(5.1, 4.6, 4.1, 2.1))
 
@@ -817,7 +844,7 @@ expos_plot <- function(filename, title="", col=rev(terrain.colors(255))) {
         if (title == "") {
             title <- "Elevation"
         }
-        raster::plot(rr, main=title, col=col)
+        raster::plot(rr, main=title, col=cmap)
     
     } else if (grepl("expos", filename)) {
         if (title == "") {
@@ -826,7 +853,7 @@ expos_plot <- function(filename, title="", col=rev(terrain.colors(255))) {
         vals <- c(0, 1, 2)
         labs <- c("", "Pro", "Exp")
         arg <- list(at=vals, labels=labs)
-        raster::plot(rr, main=title, axis.args=arg, col=col)
+        raster::plot(rr, main=title, axis.args=arg, col=cmap)
 
     } else if (grepl("damage", filename)) {
         if (title == "") {
@@ -835,13 +862,13 @@ expos_plot <- function(filename, title="", col=rev(terrain.colors(255))) {
         vals <- c(0, 1, 2, 3, 4, 5, 6, 7)
         labs <- c("", "None", "EF0", "EF1", "EF2", "EF3", "EF4", "EF5")
         arg <- list(at=vals, labels=labs)
-        raster::plot(rr, main=title, axis.args=arg, col=col)
+        raster::plot(rr, main=title, axis.args=arg, col=cmap)
     
     } else {
         if (title == "") {
             title <- filename
         }
-        raster::plot(rr, main=title, col=col)
+        raster::plot(rr, main=title, col=cmap)
     }
 }
 

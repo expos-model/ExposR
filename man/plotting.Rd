@@ -4,14 +4,14 @@
 \alias{expos_plot}
 \title{Plotting Functions}
 \usage{
-expos_plot(filename, title = "", col = rev(terrain.colors(255)))
+expos_plot(filename, title = "", colormap = "default")
 }
 \arguments{
 \item{filename}{name of input raster file}
 
 \item{title}{plot title}
 
-\item{col}{color palette}
+\item{colormap}{color palette}
 }
 \value{
 no return value
