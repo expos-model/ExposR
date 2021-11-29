@@ -576,13 +576,12 @@ expos_model <- function(wind_direction, inflection_angle, save=TRUE, console=TRU
 #' @description
 #' expos_damage uses output from Hurrecon and Expos to create a raster
 #' of hurricane wind damage where topograhic exposure at each location
-#' is determined by peak wind direction. Protected areas are assigned 
-#' None if the predicted damage is EF0 or lower and EF0 if the predicted 
-#' damage is EF1 or higher. This function requires a hurricane tif file 
-#' created by Hurrecon, eight exposure files created by Expos (N, NE, E, 
-#' etc), and a reprojection file in csv format that contains lat long 
-#' coordinates for the lower left and upper right corners of the digital 
-#' elevation model.
+#' is determined by peak wind direction. If a location is protected, 
+#' the enhanced Fujita scale rating is reduced by two. This function 
+#' requires a hurricane tif file created by Hurrecon, eight exposure files 
+#' created by Expos (N, NE, E, etc), and a reprojection file in csv format 
+#' that contains lat long coordinates for the lower left and upper right 
+#' corners of the digital elevation model.
 #' @param hurricane hurricane name (as it appears in tif file)
 #' @param inflection_angle inflection angle (degrees)
 #' @param save whether to save results to file
@@ -656,7 +655,7 @@ expos_damage <- function(hurricane, inflection_angle, save=TRUE, console=TRUE) {
     dam_m <- dem_m
     dam_m[dam_m != 0] <- 1
 
-    # calculate exposure values
+    # calculate damage values
     for (i in 1:dem_rows) {
         # display every 10th row number
         if (i %% 10 == 0) {
@@ -689,14 +688,14 @@ expos_damage <- function(hurricane, inflection_angle, save=TRUE, console=TRUE) {
 
                     # protected
                     if (exposure == 1) {
-                        # no damage if less than EF1
-                        if (damage <= 2) {
-                            dam_m[i, j] <- 1
+                        # reduce by two
+                        pro_damage <- damage - 2
+                        
+                        if (pro_damage < 1) {
+                            pro_damage <- 1
+                        }
 
-                        # EF0 if EF1 to EF5
-                        } else {
-                            dam_m[i, j] <- 2
-                        }    
+                        dam_m[i, j] <- pro_damage
 
                     # exposed
                     } else {
@@ -812,26 +811,35 @@ expos_plot <- function(filename, title="", colormap="default") {
 
     rr_min <- raster::minValue(rr)
     rr_max <- raster::maxValue(rr)
- 
-    # built-in color palettes
+
+    # default palettes
     if (length(colormap) == 1) {
         if (colormap == "default") {
-            cmap <- rev(terrain.colors(255))
-    
-        } else if (colormap == "exposure") {
-            cmap <- c("white", "grey", "blue")
+            # exposure map
+            if (grepl("expos", filename)) {
+                cmap <- c("white", "grey", "blue")
 
-        } else if (colormap == "damage") {
-            all_cols <- c("white", "grey", "purple", "blue", "green", "yellow", "orange", "red")
-            cmap <- c(all_cols[rr_min+1])
+            # damage map
+            } else if (grepl("damage", filename)) {
+                all_cols <- c("white", "grey", "purple", "blue", "green", "yellow", "orange", "red")
+                cmap <- c(all_cols[rr_min+1])
 
-            if (rr_max > rr_min) {
-                for (i in (rr_min+2):(rr_max+1)) {
-                  cmap <- append(cmap, all_cols[i])
+                if (rr_max > rr_min) {
+                    for (i in (rr_min+2):(rr_max+1)) {
+                        cmap <- append(cmap, all_cols[i])
+                    }
                 }
+
+            # dem, etc
+            } else {
+                cmap <- rev(terrain.colors(255))
             }
+        
+        # raster palette
+        } else if (colormap == "r_default") {
+            cmap <- rev(terrain.colors(255))
         }
-    
+
     # user-specified palette
     } else {
         cmap <- colormap

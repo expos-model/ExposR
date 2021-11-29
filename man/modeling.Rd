@@ -32,11 +32,10 @@ of wind exposure values (0 = missing data, 1 = protected, 2 = exposed).
 
 expos_damage uses output from Hurrecon and Expos to create a raster
 of hurricane wind damage where topograhic exposure at each location
-is determined by peak wind direction. Protected areas are assigned 
-None if the predicted damage is EF0 or lower and EF0 if the predicted 
-damage is EF1 or higher. This function requires a hurricane tif file 
-created by Hurrecon, eight exposure files created by Expos (N, NE, E, 
-etc), and a reprojection file in csv format that contains lat long 
-coordinates for the lower left and upper right corners of the digital 
-elevation model.
+is determined by peak wind direction. If a location is protected, 
+the enhanced Fujita scale rating is reduced by two. This function 
+requires a hurricane tif file created by Hurrecon, eight exposure files 
+created by Expos (N, NE, E, etc), and a reprojection file in csv format 
+that contains lat long coordinates for the lower left and upper right 
+corners of the digital elevation model.
 }
