@@ -4,12 +4,22 @@
 \alias{expos_plot}
 \title{Plotting Functions}
 \usage{
-expos_plot(filename, title = "", colormap = "default")
+expos_plot(
+  filename,
+  title = "",
+  h_units = "meters",
+  v_units = "meters",
+  colormap = "default"
+)
 }
 \arguments{
 \item{filename}{name of input raster file}
 
 \item{title}{plot title}
+
+\item{h_units}{horizontal units}
+
+\item{v_units}{vertical units}
 
 \item{colormap}{color palette}
 }
@@ -18,5 +28,5 @@ no return value
 }
 \description{
 expos_plot creates a plot of a specified raster file. Optional arguments
-include plot title and color palette.
+include plot title, horizontal units, vertical units, and color palette.
 }

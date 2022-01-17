@@ -30,7 +30,7 @@
 # is the inflection angle.
 
 # Emery R. Boose
-# November 2021
+# January 2022
 
 # R version 4.1.1
 
@@ -715,7 +715,8 @@ expos_damage <- function(hurricane, inflection_angle, save=TRUE, console=TRUE) {
 
     if (save == TRUE) {
         # save modeled results in GeoTiff file
-        dam_file <- paste(cwd, "/", hurricane, "-damage.tif", sep="")
+        dam_file <- paste(cwd, "/", hurricane, "-damage-", 
+            formatC(inflection_angle, width=2, flag="0"), ".tif", sep="")
         raster::writeRaster(dam_r, dam_file, overwrite=TRUE)
 
         if (console == TRUE) {
@@ -792,15 +793,19 @@ expos_summarize <- function(filename, console=TRUE) {
 #' Plotting Functions
 #' @description
 #' expos_plot creates a plot of a specified raster file. Optional arguments
-#' include plot title and color palette.
+#' include plot title, horizontal units, vertical units, and color palette.
 #' @param filename name of input raster file
 #' @param title plot title
+#' @param h_units horizontal units
+#' @param v_units vertical units
 #' @param colormap color palette
 #' @return no return value
 #' @export
 #' @rdname plotting
 
-expos_plot <- function(filename, title="", colormap="default") {
+expos_plot <- function(filename, title="", h_units="meters", v_units="meters",
+    colormap="default") {
+    
     # get current working directory
     cwd <- getwd()
  
@@ -852,31 +857,37 @@ expos_plot <- function(filename, title="", colormap="default") {
         if (title == "") {
             title <- "Elevation"
         }
-        raster::plot(rr, main=title, col=cmap)
+        v_units_str <- paste("  ", v_units, sep="")
+        raster::plot(rr, main=title, xlab=h_units, ylab=h_units,
+            legend.args=list(text=v_units_str, line=1), col=cmap)
     
     } else if (grepl("expos", filename)) {
         if (title == "") {
-            title <- filename
+            x <- strsplit(filename, "-")[[1]]
+            title <- paste("Exposure ", x[2], "-", x[3], sep="")
         }
         vals <- c(0, 1, 2)
         labs <- c("", "Pro", "Exp")
         arg <- list(at=vals, labels=labs)
-        raster::plot(rr, main=title, axis.args=arg, col=cmap)
+        raster::plot(rr, main=title, xlab=h_units, ylab=h_units, axis.args=arg, 
+            legend.args=list(text='  Exposure', line=1), col=cmap)
 
     } else if (grepl("damage", filename)) {
         if (title == "") {
-            title <- filename
+            x <- strsplit(filename, "-")[[1]]
+            title <- paste(x[1], " Damage ", x[3], sep="")
         }
         vals <- c(0, 1, 2, 3, 4, 5, 6, 7)
         labs <- c("", "None", "EF0", "EF1", "EF2", "EF3", "EF4", "EF5")
-        arg <- list(at=vals, labels=labs)
-        raster::plot(rr, main=title, axis.args=arg, col=cmap)
+        raster::plot(rr, main=title, xlab=h_units, ylab=h_units,
+            axis.args=list(at=vals, labels=labs), 
+            legend.args=list(text='  EF Scale', line=1), col=cmap)
     
     } else {
         if (title == "") {
             title <- filename
         }
-        raster::plot(rr, main=title, col=cmap)
+        raster::plot(rr, main=title, xlab=h_units, ylab=h_units, col=cmap)
     }
 }
 
