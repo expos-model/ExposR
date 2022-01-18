@@ -52,6 +52,26 @@ check_file_exists <- function(file_name) {
     }
 }
 
+#' get_subdirectory returns the subdirectory for a given filename
+#' and stops execution if the filename is not supported.
+#' @param filename name of file
+#' @return subdirectory
+#' @noRd
+
+get_subdirectory <- function(filename) {
+    if (filename == "dem") {
+        subdir <- "/dem/"
+    } else if (grepl("expos", filename)) {
+        subdir <- "/exposure/"
+    } else if (grepl("damage", filename)) {
+        subdir <- "/damage/"
+    } else {
+        stop("File name not supported")
+    }
+
+    return(subdir)
+}
+
 #' get_row_order returns TRUE if the row order remains unchanged 
 #' (quadrants I-II) or FALSE if the row order is reversed
 #' (quadrants III-IV).
@@ -132,7 +152,7 @@ west_north_west <- function(wind_direction, inflection_angle, t_dir, save, conso
     cwd <- getwd()
  
     # read dem file in GeoTiff format
-    dem_file <- paste(cwd, "/dem.tif", sep="")
+    dem_file <- paste(cwd, "/dem/dem.tif", sep="")
     check_file_exists(dem_file)
     dem_r <- raster::raster(dem_file)
   
@@ -284,7 +304,7 @@ west_north_west <- function(wind_direction, inflection_angle, t_dir, save, conso
     # output
     if (save == TRUE) {
         # save modeled values in a Geotiff file
-        expos_file = paste(cwd, "/expos-", formatC(wind_direction, width=3, flag="0"), "-", 
+        expos_file = paste(cwd, "/exposure/expos-", formatC(wind_direction, width=3, flag="0"), "-", 
             formatC(inflection_angle, width=2, flag="0"), ".tif", sep="")
 
         raster::writeRaster(expos_r, expos_file, overwrite=TRUE)
@@ -315,7 +335,7 @@ north_north_west <- function(wind_direction, inflection_angle, t_dir, save, cons
     cwd <- getwd()
  
     # read dem file in GeoTiff format
-    dem_file <- paste(cwd, "/dem.tif", sep="")
+    dem_file <- paste(cwd, "/dem/dem.tif", sep="")
     check_file_exists(dem_file)
     dem_r <- raster::raster(dem_file)
   
@@ -466,7 +486,7 @@ north_north_west <- function(wind_direction, inflection_angle, t_dir, save, cons
     # output
     if (save == TRUE) {
         # save modeled values in a Geotiff file
-        expos_file = paste(cwd, "/expos-", formatC(wind_direction, width=3, flag="0"), "-", 
+        expos_file = paste(cwd, "/exposure/expos-", formatC(wind_direction, width=3, flag="0"), "-", 
             formatC(inflection_angle, width=2, flag="0"), ".tif", sep="")
 
         raster::writeRaster(expos_r, expos_file, overwrite=TRUE)
@@ -540,7 +560,7 @@ expos_model <- function(wind_direction, inflection_angle, save=TRUE, console=TRU
     }
 
     # read dem file in GeoTiff format
-    dem_path <- paste(cwd, "/dem.tif", sep="")
+    dem_path <- paste(cwd, "/dem/dem.tif", sep="")
     check_file_exists(dem_path)
     dem_r <- raster::raster(dem_path)
  
@@ -600,14 +620,14 @@ expos_damage <- function(hurricane, inflection_angle, save=TRUE, console=TRUE) {
     for (i in 1:8) {
         wind_direction <- (i-1)*45
 
-        expos_file <- paste(cwd, "/expos-", formatC(wind_direction, width=3, flag="0"), "-", 
+        expos_file <- paste(cwd, "/exposure/expos-", formatC(wind_direction, width=3, flag="0"), "-", 
             formatC(inflection_angle, width=2, flag="0"), ".tif", sep="")
     
         ee_r[[i]] <- raster::raster(expos_file)
     }
 
     # read dem file
-    dem_file <- paste(cwd, "/dem.tif", sep="")
+    dem_file <- paste(cwd, "/dem/dem.tif", sep="")
     dem_r <- raster::raster(dem_file)
 
     dem_rows <- dim(dem_r)[1]
@@ -619,7 +639,7 @@ expos_damage <- function(hurricane, inflection_angle, save=TRUE, console=TRUE) {
     dem_ymx <- raster::extent(dem_r)[4]
 
     # read hurrecon file
-    hur_file <- paste(cwd, "/", hurricane, ".tif", sep="")
+    hur_file <- paste(cwd, "/damage/", hurricane, ".tif", sep="")
     ff_r <- raster::raster(hur_file, 2)  # enhanced Fujita scale
     cc_r <- raster::raster(hur_file, 4)  # cardinal wind direction (1-8)
 
@@ -632,7 +652,7 @@ expos_damage <- function(hurricane, inflection_angle, save=TRUE, console=TRUE) {
     hur_ymx <- raster::extent(ff_r)[4]
 
     # read reproject file
-    reproject_file <- "reproject.csv"
+    reproject_file <- paste(cwd, "/damage/reproject.csv", sep="")
     rp <- read.csv(reproject_file, header=TRUE)
 
     lat_0 <- rp$lat_0
@@ -715,7 +735,7 @@ expos_damage <- function(hurricane, inflection_angle, save=TRUE, console=TRUE) {
 
     if (save == TRUE) {
         # save modeled results in GeoTiff file
-        dam_file <- paste(cwd, "/", hurricane, "-damage-", 
+        dam_file <- paste(cwd, "/damage/", hurricane, "-damage-", 
             formatC(inflection_angle, width=2, flag="0"), ".tif", sep="")
         raster::writeRaster(dam_r, dam_file, overwrite=TRUE)
 
@@ -747,8 +767,11 @@ expos_summarize <- function(filename, console=TRUE) {
     # get current working directory
     cwd <- getwd()
  
+    # get subdirectory
+    subdir <- get_subdirectory(filename)
+
     # read file in GeoTiff format
-    file_path <- paste(cwd, "/", filename, ".tif", sep="")
+    file_path <- paste(cwd, subdir, filename, ".tif", sep="")
     check_file_exists(file_path)
     rr <- raster::raster(file_path)
 
@@ -793,26 +816,38 @@ expos_summarize <- function(filename, console=TRUE) {
 #' Plotting Functions
 #' @description
 #' expos_plot creates a plot of a specified raster file. Optional arguments
-#' include plot title, horizontal units, vertical units, and color palette.
+#' include plot title, horizontal units, vertical units, vector (boundary
+#' files) and color palette.
 #' @param filename name of input raster file
 #' @param title plot title
 #' @param h_units horizontal units
 #' @param v_units vertical units
+#' @param vector whether to display vectory boundary files
 #' @param colormap color palette
 #' @return no return value
 #' @export
 #' @rdname plotting
 
 expos_plot <- function(filename, title="", h_units="meters", v_units="meters",
-    colormap="default") {
+    vector=TRUE, colormap="default") {
     
     # get current working directory
     cwd <- getwd()
  
+    # get subdirectory
+    subdir <- get_subdirectory(filename)
+
     # read file in GeoTiff format
-    file_path <- paste(cwd, "/", filename, ".tif", sep="")
+    file_path <- paste(cwd, subdir, filename, ".tif", sep="")
     check_file_exists(file_path)
     rr <- raster::raster(file_path)
+
+    # get vector boundary file
+    if (vector == TRUE) {
+        boundaries_file <- paste(cwd, "/vector/boundaries.shp", sep="")
+        check_file_exists(boundaries_file)
+        boundaries <- rgdal::readOGR(boundaries_file)
+    }
 
     rr_min <- raster::minValue(rr)
     rr_max <- raster::maxValue(rr)
@@ -860,6 +895,9 @@ expos_plot <- function(filename, title="", h_units="meters", v_units="meters",
         v_units_str <- paste("  ", v_units, sep="")
         raster::plot(rr, main=title, xlab=h_units, ylab=h_units,
             legend.args=list(text=v_units_str, line=1), col=cmap)
+        if (vector == TRUE) {
+            raster::plot(boundaries, add=TRUE)
+        }
     
     } else if (grepl("expos", filename)) {
         if (title == "") {
@@ -871,6 +909,9 @@ expos_plot <- function(filename, title="", h_units="meters", v_units="meters",
         arg <- list(at=vals, labels=labs)
         raster::plot(rr, main=title, xlab=h_units, ylab=h_units, axis.args=arg, 
             legend.args=list(text='  Exposure', line=1), col=cmap)
+        if (vector == TRUE) {
+            raster::plot(boundaries, add=TRUE)
+        }
 
     } else if (grepl("damage", filename)) {
         if (title == "") {
@@ -882,12 +923,18 @@ expos_plot <- function(filename, title="", h_units="meters", v_units="meters",
         raster::plot(rr, main=title, xlab=h_units, ylab=h_units,
             axis.args=list(at=vals, labels=labs), 
             legend.args=list(text='  EF Scale', line=1), col=cmap)
+        if (vector == TRUE) {
+            raster::plot(boundaries, add=TRUE)
+        }
     
     } else {
         if (title == "") {
             title <- filename
         }
         raster::plot(rr, main=title, xlab=h_units, ylab=h_units, col=cmap)
+        if (vector == TRUE) {
+            raster::plot(boundaries, add=TRUE)
+        }
     }
 }
 

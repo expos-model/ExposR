@@ -9,6 +9,7 @@ expos_plot(
   title = "",
   h_units = "meters",
   v_units = "meters",
+  vector = TRUE,
   colormap = "default"
 )
 }
@@ -21,6 +22,8 @@ expos_plot(
 
 \item{v_units}{vertical units}
 
+\item{vector}{whether to display vectory boundary files}
+
 \item{colormap}{color palette}
 }
 \value{
@@ -28,5 +31,6 @@ no return value
 }
 \description{
 expos_plot creates a plot of a specified raster file. Optional arguments
-include plot title, horizontal units, vertical units, and color palette.
+include plot title, horizontal units, vertical units, vector (boundary
+files) and color palette.
 }
