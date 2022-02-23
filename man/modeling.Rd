@@ -7,7 +7,13 @@
 \usage{
 expos_model(wind_direction, inflection_angle, save = TRUE, console = TRUE)
 
-expos_damage(hurricane, inflection_angle, save = TRUE, console = TRUE)
+expos_damage(
+  hurricane,
+  inflection_angle,
+  protection = 2,
+  save = TRUE,
+  console = TRUE
+)
 }
 \arguments{
 \item{wind_direction}{wind direction (degrees)}
@@ -19,6 +25,9 @@ expos_damage(hurricane, inflection_angle, save = TRUE, console = TRUE)
 \item{console}{whether to display messages in console}
 
 \item{hurricane}{hurricane name (as it appears in tif file)}
+
+\item{protection}{how much to reduce damage in protected areas 
+(Fujita scale ratings)}
 }
 \value{
 no return value
@@ -33,9 +42,9 @@ of wind exposure values (0 = missing data, 1 = protected, 2 = exposed).
 expos_damage uses output from Hurrecon and Expos to create a raster
 of hurricane wind damage where topograhic exposure at each location
 is determined by peak wind direction. If a location is protected, 
-the enhanced Fujita scale rating is reduced by two. This function 
-requires a hurricane tif file created by Hurrecon, eight exposure files 
-created by Expos (N, NE, E, etc), and a reprojection file in csv format 
-that contains lat long coordinates for the lower left and upper right 
-corners of the digital elevation model.
+the enhanced Fujita scale rating is reduced by a specified amount.
+This function requires a hurricane tif file created by Hurrecon, 
+eight exposure files created by Expos (N, NE, E, etc), and a reprojection
+file in csv format that contains lat long coordinates for the lower left 
+and upper right corners of the digital elevation model.
 }

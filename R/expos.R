@@ -30,7 +30,7 @@
 # is the inflection angle.
 
 # Emery R. Boose
-# January 2022
+# February 2022
 
 # R version 4.1.1
 
@@ -597,20 +597,28 @@ expos_model <- function(wind_direction, inflection_angle, save=TRUE, console=TRU
 #' expos_damage uses output from Hurrecon and Expos to create a raster
 #' of hurricane wind damage where topograhic exposure at each location
 #' is determined by peak wind direction. If a location is protected, 
-#' the enhanced Fujita scale rating is reduced by two. This function 
-#' requires a hurricane tif file created by Hurrecon, eight exposure files 
-#' created by Expos (N, NE, E, etc), and a reprojection file in csv format 
-#' that contains lat long coordinates for the lower left and upper right 
-#' corners of the digital elevation model.
+#' the enhanced Fujita scale rating is reduced by a specified amount.
+#' This function requires a hurricane tif file created by Hurrecon, 
+#' eight exposure files created by Expos (N, NE, E, etc), and a reprojection
+#' file in csv format that contains lat long coordinates for the lower left 
+#' and upper right corners of the digital elevation model.
 #' @param hurricane hurricane name (as it appears in tif file)
 #' @param inflection_angle inflection angle (degrees)
+#' @param protection how much to reduce damage in protected areas 
+#' (Fujita scale ratings)
 #' @param save whether to save results to file
 #' @param console whether to display messages in console
 #' @return raster of landscape-level wind damage
 #' @export
 #' @rdname modeling
 
-expos_damage <- function(hurricane, inflection_angle, save=TRUE, console=TRUE) {
+expos_damage <- function(hurricane, inflection_angle, protection=2, save=TRUE, 
+    console=TRUE) {
+    
+    if (console == TRUE) {
+        cat("Reading files", "\n")
+    }
+
     # get current working directory
     cwd <- getwd()
 
@@ -677,9 +685,11 @@ expos_damage <- function(hurricane, inflection_angle, save=TRUE, console=TRUE) {
 
     # calculate damage values
     for (i in 1:dem_rows) {
-        # display every 10th row number
-        if (i %% 10 == 0) {
-            cat("\rrow", i)
+        if (console == TRUE) {
+            # display every 10th row number
+            if (i %% 10 == 0) {
+                cat("\rrow", i)
+            }
         }
 
         for (j in 1:dem_cols) {
@@ -693,34 +703,39 @@ expos_damage <- function(hurricane, inflection_angle, save=TRUE, console=TRUE) {
 
             # skip missing values in dem
             if (dem_m[i, j] != 0) {
-                # get peak wind direction (1-8)
-                pdir <- cc_m[hur_row, hur_col]
 
-                if (pdir == 0) {
-                    # no damage if no peak wind direction
-                    dam_m[i, j] <- 1
+                if (hur_row <= hur_rows && hur_col <= hur_cols) {
+                    # get peak wind direction (1-8)
+                    pdir <- cc_m[hur_row, hur_col]
 
-                } else {
-                    # get topographic exposure
-                    exposure <- ee_m[[pdir]][i, j]
-                    # get fujita scale damage (0-7)
-                    damage <- ff_m[hur_row, hur_col]
+                    if (pdir == 0) {
+                        # no damage if no peak wind direction
+                        dam_m[i, j] <- 1
 
-                    # protected
-                    if (exposure == 1) {
-                        # reduce by two
-                        pro_damage <- damage - 2
-                        
-                        if (pro_damage < 1) {
-                            pro_damage <- 1
-                        }
-
-                        dam_m[i, j] <- pro_damage
-
-                    # exposed
                     } else {
-                        dam_m[i, j] <- damage
+                        # get topographic exposure
+                        exposure <- ee_m[[pdir]][i, j]
+                        # get fujita scale damage (0-7)
+                        damage <- ff_m[hur_row, hur_col]
+
+                        # protected
+                        if (exposure == 1) {
+                            # reduce damage
+                            pro_damage <- damage - protection
+                            
+                            if (pro_damage < 1) {
+                                pro_damage <- 1
+                            }   
+
+                            dam_m[i, j] <- pro_damage
+
+                        # exposed
+                        } else {
+                            dam_m[i, j] <- damage
+                        }
                     }
+                } else {
+                    dam_m[i, j] <- 0
                 }
             }
         }
