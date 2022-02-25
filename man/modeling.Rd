@@ -7,13 +7,7 @@
 \usage{
 expos_model(wind_direction, inflection_angle, save = TRUE, console = TRUE)
 
-expos_damage(
-  hurricane,
-  inflection_angle,
-  protection = 2,
-  save = TRUE,
-  console = TRUE
-)
+expos_damage(hurricane, inflection_angle, protect, save = TRUE, console = TRUE)
 }
 \arguments{
 \item{wind_direction}{wind direction (degrees)}
@@ -26,8 +20,8 @@ expos_damage(
 
 \item{hurricane}{hurricane name (as it appears in tif file)}
 
-\item{protection}{how much to reduce damage in protected areas 
-(Fujita scale ratings)}
+\item{protect}{how much to reduce damage in protected areas (Fujita 
+scale ratings)}
 }
 \value{
 no return value

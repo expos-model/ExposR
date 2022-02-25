@@ -604,15 +604,15 @@ expos_model <- function(wind_direction, inflection_angle, save=TRUE, console=TRU
 #' and upper right corners of the digital elevation model.
 #' @param hurricane hurricane name (as it appears in tif file)
 #' @param inflection_angle inflection angle (degrees)
-#' @param protection how much to reduce damage in protected areas 
-#' (Fujita scale ratings)
+#' @param protect how much to reduce damage in protected areas (Fujita 
+#' scale ratings)
 #' @param save whether to save results to file
 #' @param console whether to display messages in console
 #' @return raster of landscape-level wind damage
 #' @export
 #' @rdname modeling
 
-expos_damage <- function(hurricane, inflection_angle, protection=2, save=TRUE, 
+expos_damage <- function(hurricane, inflection_angle, protect, save=TRUE, 
     console=TRUE) {
     
     if (console == TRUE) {
@@ -621,6 +621,11 @@ expos_damage <- function(hurricane, inflection_angle, protection=2, save=TRUE,
 
     # get current working directory
     cwd <- getwd()
+
+    # check protect value
+    if (protect < 0 || protect > 6) {
+        stop("Please supply protect in range 0-6")
+    }
 
     # read exposure files
     ee_r <- list()
@@ -679,7 +684,7 @@ expos_damage <- function(hurricane, inflection_angle, protection=2, save=TRUE,
     ff_m  <- raster::as.matrix(ff_r)
     cc_m  <- raster::as.matrix(cc_r)
 
-    # create damage matrix
+    # create damage matrix (0 = missing, 1 = no damage)
     dam_m <- dem_m
     dam_m[dam_m != 0] <- 1
 
@@ -693,21 +698,21 @@ expos_damage <- function(hurricane, inflection_angle, protection=2, save=TRUE,
         }
 
         for (j in 1:dem_cols) {
-            # get lat long coordinates
-            hur_x <- lon_0 + (lon_1 - lon_0)*(j - 0.5)/dem_cols
-            hur_y <- lat_1 - (lat_1 - lat_0)*(i - 0.5)/dem_rows
-
-            # get row & col in hurricane file (note: row 1 = top of raster)
-            hur_row <- ceiling(hur_rows - hur_rows*(hur_y - hur_ymn)/(hur_ymx - hur_ymn))
-            hur_col <- ceiling(hur_cols*(hur_x - hur_xmn)/(hur_xmx - hur_xmn))
-
             # skip missing values in dem
             if (dem_m[i, j] != 0) {
+                # get lat long coordinates
+                hur_x <- lon_0 + (lon_1 - lon_0)*(j - 0.5)/dem_cols
+                hur_y <- lat_1 - (lat_1 - lat_0)*(i - 0.5)/dem_rows
 
-                if (hur_row <= hur_rows && hur_col <= hur_cols) {
+                # get row & col in hurricane file (note: row 1 = top of raster)
+                hur_row <- ceiling(hur_rows - hur_rows*(hur_y - hur_ymn)/(hur_ymx - hur_ymn))
+                hur_col <- ceiling(hur_cols*(hur_x - hur_xmn)/(hur_xmx - hur_xmn))
+
+                # # check if in Hurrecon output
+                if (hur_row >= 1 && hur_row <= hur_rows && hur_col >= 1 && hur_col <= hur_cols) {
                     # get peak wind direction (1-8)
                     pdir <- cc_m[hur_row, hur_col]
-
+                   
                     if (pdir == 0) {
                         # no damage if no peak wind direction
                         dam_m[i, j] <- 1
@@ -721,7 +726,7 @@ expos_damage <- function(hurricane, inflection_angle, protection=2, save=TRUE,
                         # protected
                         if (exposure == 1) {
                             # reduce damage
-                            pro_damage <- damage - protection
+                            pro_damage <- damage - protect
                             
                             if (pro_damage < 1) {
                                 pro_damage <- 1
@@ -734,8 +739,10 @@ expos_damage <- function(hurricane, inflection_angle, protection=2, save=TRUE,
                             dam_m[i, j] <- damage
                         }
                     }
+
+                # otherwise set to missing
                 } else {
-                    dam_m[i, j] <- 0
+                   dam_m[i, j] <- 0
                 }
             }
         }
@@ -751,7 +758,7 @@ expos_damage <- function(hurricane, inflection_angle, protection=2, save=TRUE,
     if (save == TRUE) {
         # save modeled results in GeoTiff file
         dam_file <- paste(cwd, "/damage/", hurricane, "-damage-", 
-            formatC(inflection_angle, width=2, flag="0"), ".tif", sep="")
+            formatC(inflection_angle, width=2, flag="0"), "-", protect, ".tif", sep="")
         raster::writeRaster(dam_r, dam_file, overwrite=TRUE)
 
         if (console == TRUE) {
@@ -931,7 +938,7 @@ expos_plot <- function(filename, title="", h_units="meters", v_units="meters",
     } else if (grepl("damage", filename)) {
         if (title == "") {
             x <- strsplit(filename, "-")[[1]]
-            title <- paste(x[1], " Damage ", x[3], sep="")
+            title <- paste(x[1], " Damage ", x[3], "-", x[4],sep="")
         }
         vals <- c(0, 1, 2, 3, 4, 5, 6, 7)
         labs <- c("", "None", "EF0", "EF1", "EF2", "EF3", "EF4", "EF5")
