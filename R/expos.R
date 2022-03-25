@@ -30,7 +30,7 @@
 # is the inflection angle.
 
 # Emery R. Boose
-# February 2022
+# March 2022
 
 # R version 4.1.1
 
@@ -938,7 +938,7 @@ expos_plot <- function(filename, title="", h_units="meters", v_units="meters",
     } else if (grepl("damage", filename)) {
         if (title == "") {
             x <- strsplit(filename, "-")[[1]]
-            title <- paste(x[1], " Damage ", x[3], "-", x[4],sep="")
+            title <- paste(x[1], "-", x[2], " Damage ", x[4], "-", x[5],sep="")
         }
         vals <- c(0, 1, 2, 3, 4, 5, 6, 7)
         labs <- c("", "None", "EF0", "EF1", "EF2", "EF3", "EF4", "EF5")
