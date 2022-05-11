@@ -30,7 +30,7 @@
 # is the inflection angle.
 
 # Emery R. Boose
-# March 2022
+# May 2022
 
 # R version 4.1.1
 
@@ -524,7 +524,7 @@ expos_set_path <- function(exp_path, console=TRUE) {
     setwd(exp_path)
 
     if (console == TRUE) {
-        cat("Path set to", exp_path)
+        cat("Path set to", exp_path, "\n")
     }
 }
 
