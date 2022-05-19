@@ -546,6 +546,11 @@ expos_set_path <- function(exp_path, console=TRUE) {
 #' @rdname modeling
 
 expos_model <- function(wind_direction, inflection_angle, save=TRUE, console=TRUE) {
+    # announcement
+    if (console == TRUE) {
+        cat("... Modeling exposure ...\n")
+    }
+
     # get current working directory
     cwd <- getwd()
  
@@ -615,8 +620,9 @@ expos_model <- function(wind_direction, inflection_angle, save=TRUE, console=TRU
 expos_damage <- function(hurricane, inflection_angle, protect, save=TRUE, 
     console=TRUE) {
     
+    # announcement
     if (console == TRUE) {
-        cat("Reading files", "\n")
+        cat("... Modeling damage ...\n")
     }
 
     # get current working directory
@@ -786,6 +792,11 @@ expos_damage <- function(hurricane, inflection_angle, protect, save=TRUE,
 #' @rdname summarizing
 
 expos_summarize <- function(filename, console=TRUE) {
+    # announcement
+    if (console == TRUE) {
+        cat("... Summarizing raster ...\n")
+    }
+    
     # get current working directory
     cwd <- getwd()
  
@@ -851,8 +862,12 @@ expos_summarize <- function(filename, console=TRUE) {
 #' @rdname plotting
 
 expos_plot <- function(filename, title="", h_units="meters", v_units="meters",
-    vector=TRUE, colormap="default") {
+    vector=TRUE, colormap="default", console=TRUE) {
     
+    if (console == TRUE) {
+        cat("... Plotting raster ...\n")
+    }
+
     # get current working directory
     cwd <- getwd()
  

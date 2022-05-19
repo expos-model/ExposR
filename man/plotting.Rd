@@ -10,7 +10,8 @@ expos_plot(
   h_units = "meters",
   v_units = "meters",
   vector = TRUE,
-  colormap = "default"
+  colormap = "default",
+  console = TRUE
 )
 }
 \arguments{
