@@ -5,7 +5,14 @@
 \alias{expos_damage}
 \title{Modeling Functions}
 \usage{
-expos_model(wind_direction, inflection_angle, save = TRUE, console = TRUE)
+expos_model(
+  wind_direction,
+  inflection_angle,
+  lat_long = FALSE,
+  orient = 0,
+  save = TRUE,
+  console = TRUE
+)
 
 expos_damage(hurricane, inflection_angle, protect, save = TRUE, console = TRUE)
 }
@@ -13,6 +20,10 @@ expos_damage(hurricane, inflection_angle, protect, save = TRUE, console = TRUE)
 \item{wind_direction}{wind direction (degrees)}
 
 \item{inflection_angle}{inflection angle (degrees)}
+
+\item{lat_long}{whether coordinate system is latitude/longitude (degrees)}
+
+\item{orient}{map orientation (degrees)}
 
 \item{save}{whether to save results to file}
 
@@ -24,14 +35,19 @@ expos_damage(hurricane, inflection_angle, protect, save = TRUE, console = TRUE)
 scale ratings)}
 }
 \value{
-no return value
+raster of modeled exposure values
 
-raster of landscape-level wind damage
+raster of modeled wind damage values
 }
 \description{
 expos_model uses a raster file of elevation values, a specified wind
 direction, and a specified inflection angle to create a raster file
 of wind exposure values (0 = missing data, 1 = protected, 2 = exposed).
+If a geographic coordinate system is used, horizontal and vertical units 
+are assumed to be degrees and meters, respectively; otherwise horizontal 
+and vertical units must be the same. Columns are assumed to be closely 
+aligned with true North (0 degrees); if not, the map orientation must 
+be specified. The name of the input file is assumed to be "dem.tif".
 
 expos_damage uses output from Hurrecon and Expos to create a raster
 of hurricane wind damage where topograhic exposure at each location

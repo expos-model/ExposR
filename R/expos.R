@@ -14,25 +14,45 @@
 #   License along with this program.  If not, see
 #   <http://www.gnu.org/licenses/>.
 
-# The EXPOS model uses a digital elevation model to estimate exposed and
-# protected areas for a given wind direction and inflection angle.
+# EXPOS uses a digital elevation model (dem) to estimate exposed and
+# protected areas for a given wind direction and inflection angle. The
+# resulting topograhic exposure maps can be combined with output from 
+# the Hurrecon model to estimate hurricane wind damage across a region.
+# EXPOS contains two main functions:
 
-# The input file is assumed to be a raster file in GeoTiff format with 
-# missing values represented by zero.  Cells may be rectangular but 
-# horizontal and vertical units must be the same. Columns are assumed
-# to be closely aligned with true north (if not, wind direction values
-# must be adjusted accordingly). The name of the input file is 
-# assumed to be "dem.tif".
+# 1. The expos_model function estmates topopgrahic exposure for a specified
+# wind direction and inflection angle. The input file is assumed to be a
+# raster of elevation values in GeoTiff format with missing values represented
+# by zero. Cells may be rectangular. If a geographic coordinate system is used,
+# horizontal and vertical units are assumed to be degrees and meters, 
+# respectively; otherwise horizontal and vertical units must be the same. 
+# Columns are assumed to be closely aligned with true North (0 degrees); 
+# if not, the map orientation (in degrees) must be specified. The name of 
+# the input file is assumed to be "dem.tif".
 
 # The output file is a raster file in GeoTiff format with the following
 # values: 0 = missing data, 1 = protected, 2 = exposed. Output files
 # are named "expos-xxx-yy.tif" where xxx is the wind direction and yy
 # is the inflection angle.
 
-# Emery R. Boose
-# May 2022
+# 2. The expos_damage function estimates regional hurricane damage as a 
+# function of topographic exposure to peak wind direction at each raster cell.
+# If a cell is protected, the enhanced Fujita scale (EF) rating is reduced
+# by a specified amount. This function requires a hurricane GeoTiff file 
+# created by Hurrecon, eight exposure files created by Expos (N, NE, E, etc), 
+# and a reprojection file in csv format that contains lat/long coordinates 
+# for the lower left and upper right corners of the digital elevation model.
 
-# R version 4.1.1
+# The output file is a raster file in GeoTiff format with the following values:
+# 0 = missing, 1 = no damage, 2 = F0 damage, 3 = F1 damage, 4 = F2 damage, 
+# 5 = F3 damage, 6 = F4 damage, 7 = F5 damage. Output files are named 
+# "hhhh-damage-yy-z.tif" where hhhh is the hurricane ID, yy is the inflection 
+# angle, and z is the reduction in EF rating for protected areas.
+
+# Emery R. Boose
+# June 2022
+
+# R version 4.2.0
 
 # Required packages:
 #  raster
@@ -142,12 +162,15 @@ get_transposed_wind_direction <- function(wdir) {
 #' @param wind_direction wind direction (degrees)
 #' @param inflection_angle inflection angle (degrees)
 #' @param t_dir transposed wind direction (degrees)
-#' @param save whether to save results to file
-#' @param console whether to display messages in console
+#' @param lat_long whether coordinate system is latitude/longitude (degrees)
 #' @return raster of modeled exposure values
 #' @noRd
 
-west_north_west <- function(wind_direction, inflection_angle, t_dir, save, console) {
+west_north_west <- function(wind_direction, inflection_angle, t_dir, lat_long) {
+    
+    # convert 1 degree of latitude to meters
+    deg2meters <- 111195
+
     # get current working directory
     cwd <- getwd()
  
@@ -169,6 +192,13 @@ west_north_west <- function(wind_direction, inflection_angle, t_dir, save, conso
     # calculate cell dimensions
     cell_x <- (xmx-xmn)/ncols
     cell_y <- (ymx-ymn)/nrows
+
+    # adjust if lat/long
+    if (lat_long == TRUE) {
+        lat_mid <- (xmx-xmn)/2
+        cell_x <- cell_x*deg2meters*cos(lat_mid*pi/180)
+        cell_y <- cell_y*deg2meters
+    }
 
     # set exposure values
     pro_value <- 1
@@ -301,19 +331,6 @@ west_north_west <- function(wind_direction, inflection_angle, t_dir, save, conso
     # copy coordinate reference system from dem
     raster::crs(expos_r) <- raster::crs(dem_r)
 
-    # output
-    if (save == TRUE) {
-        # save modeled values in a Geotiff file
-        expos_file = paste(cwd, "/exposure/expos-", formatC(wind_direction, width=3, flag="0"), "-", 
-            formatC(inflection_angle, width=2, flag="0"), ".tif", sep="")
-
-        raster::writeRaster(expos_r, expos_file, overwrite=TRUE)
-    
-        if (console == TRUE) {
-            cat("\nSaving to", expos_file, "\n")
-        }
-    }
-     
     # return modeled values as raster
     invisible(expos_r)
 }
@@ -325,12 +342,15 @@ west_north_west <- function(wind_direction, inflection_angle, t_dir, save, conso
 #' @param wind_direction wind direction (degrees)
 #' @param inflection_angle inflection angle (degrees)
 #' @param t_dir transposed wind direction (degrees)
-#' @param save whether to save results to file
-#' @param console whether to display messages in console
+#' @param lat_long whether coordinate system is latitude/longitude (degrees)
 #' @return raster of modeled exposure values
 #' @noRd
 
-north_north_west <- function(wind_direction, inflection_angle, t_dir, save, console) {
+north_north_west <- function(wind_direction, inflection_angle, t_dir, lat_long) {
+    
+    # convert 1 degree of latitude to meters
+    deg2meters <- 111195
+
     # get current working directory
     cwd <- getwd()
  
@@ -352,6 +372,13 @@ north_north_west <- function(wind_direction, inflection_angle, t_dir, save, cons
     # calculate cell dimensions
     cell_x <- (xmx-xmn)/ncols
     cell_y <- (ymx-ymn)/nrows
+
+    # adjust if lat/long
+    if (lat_long == TRUE) {
+        lat_mid <- (xmx-xmn)/2
+        cell_x <- cell_x*deg2meters*cos(lat_mid*pi/180)
+        cell_y <- cell_y*deg2meters
+    }
 
     # set exposure values
     pro_value <- 1
@@ -483,19 +510,6 @@ north_north_west <- function(wind_direction, inflection_angle, t_dir, save, cons
     # copy coordinate reference system from dem
     raster::crs(expos_r) <- raster::crs(dem_r)
 
-    # output
-    if (save == TRUE) {
-        # save modeled values in a Geotiff file
-        expos_file = paste(cwd, "/exposure/expos-", formatC(wind_direction, width=3, flag="0"), "-", 
-            formatC(inflection_angle, width=2, flag="0"), ".tif", sep="")
-
-        raster::writeRaster(expos_r, expos_file, overwrite=TRUE)
-    
-        if (console == TRUE) {
-            cat("\nSaving to", expos_file, "\n")
-        }
-    }
-  
     # return modeled values as raster
     invisible(expos_r)
 }
@@ -537,19 +551,32 @@ expos_set_path <- function(exp_path, console=TRUE) {
 #' expos_model uses a raster file of elevation values, a specified wind
 #' direction, and a specified inflection angle to create a raster file
 #' of wind exposure values (0 = missing data, 1 = protected, 2 = exposed).
+#' If a geographic coordinate system is used, horizontal and vertical units 
+#' are assumed to be degrees and meters, respectively; otherwise horizontal 
+#' and vertical units must be the same. Columns are assumed to be closely 
+#' aligned with true North (0 degrees); if not, the map orientation must 
+#' be specified. The name of the input file is assumed to be "dem.tif".
+
 #' @param wind_direction wind direction (degrees)
 #' @param inflection_angle inflection angle (degrees)
+#' @param lat_long whether coordinate system is latitude/longitude (degrees)
+#' @param orient map orientation (degrees)
 #' @param save whether to save results to file
 #' @param console whether to display messages in console
-#' @return no return value
+#' @return raster of modeled exposure values
 #' @export
 #' @rdname modeling
 
-expos_model <- function(wind_direction, inflection_angle, save=TRUE, console=TRUE) {
+expos_model <- function(wind_direction, inflection_angle, lat_long=FALSE, orient=0,
+    save=TRUE, console=TRUE) {
+    
     # announcement
     if (console == TRUE) {
         cat("... Modeling exposure ...\n")
     }
+
+    # convert 1 degree of latitude to meters
+    deg2meters <- 111195
 
     # get current working directory
     cwd <- getwd()
@@ -583,19 +610,50 @@ expos_model <- function(wind_direction, inflection_angle, save=TRUE, console=TRU
     cell_x <- (xmx-xmn)/ncols
     cell_y <- (ymx-ymn)/nrows
 
+    # adjust if lat/long
+    if (lat_long == TRUE) {
+        lat_mid <- (xmx-xmn)/2
+        cell_x <- cell_x*deg2meters*cos(lat_mid*pi/180)
+        cell_y <- cell_y*deg2meters
+    }
+
     # get angle of cell diagonal
     cell_diagonal <- 360 - 180*atan(cell_x/cell_y)/pi;
+
+    # adjust wind direction for map orientation
+    wind_direction <- wind_direction + orient
+
+    if (wind_direction > 360) {
+        wind_direction <- wind_direction - 360
+    }
 
     # get transposed wind direction
     t_dir <- get_transposed_wind_direction(wind_direction)
   
     # create exposure map
     if (t_dir < cell_diagonal) {
-        west_north_west(wind_direction, inflection_angle, t_dir, save, console)
+        expos_r <- west_north_west(wind_direction, inflection_angle, t_dir, lat_long)
 
     } else {
-        north_north_west(wind_direction, inflection_angle, t_dir, save, console)
+        expos_r <- north_north_west(wind_direction, inflection_angle, t_dir, lat_long)
     }
+
+    # output
+    if (save == TRUE) {
+        # save modeled values in a Geotiff file
+        expos_file = paste(cwd, "/exposure/expos-", formatC(wind_direction, width=3, flag="0"), "-", 
+            formatC(inflection_angle, width=2, flag="0"), ".tif", sep="")
+
+        rgdal::setCPLConfigOption("GDAL_PAM_ENABLED", "FALSE")
+        raster::writeRaster(expos_r, expos_file, overwrite=TRUE)
+    
+        if (console == TRUE) {
+            cat("\nSaving to", expos_file, "\n")
+        }
+    }
+
+    # return modeled values as raster
+    invisible(expos_r)
 }
 
 #' @description
@@ -613,7 +671,7 @@ expos_model <- function(wind_direction, inflection_angle, save=TRUE, console=TRU
 #' scale ratings)
 #' @param save whether to save results to file
 #' @param console whether to display messages in console
-#' @return raster of landscape-level wind damage
+#' @return raster of modeled wind damage values
 #' @export
 #' @rdname modeling
 
@@ -765,6 +823,8 @@ expos_damage <- function(hurricane, inflection_angle, protect, save=TRUE,
         # save modeled results in GeoTiff file
         dam_file <- paste(cwd, "/damage/", hurricane, "-damage-", 
             formatC(inflection_angle, width=2, flag="0"), "-", protect, ".tif", sep="")
+        
+        rgdal::setCPLConfigOption("GDAL_PAM_ENABLED", "FALSE")
         raster::writeRaster(dam_r, dam_file, overwrite=TRUE)
 
         if (console == TRUE) {
