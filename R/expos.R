@@ -59,6 +59,26 @@
 
 ### INTERNAL FUNCTIONS ####################################
 
+# create environment to store path
+
+exp_env <- new.env(parent=emptyenv())
+
+#' get_path returns the path for the current set of model runs.
+#' If not set, a message is displayed.
+#' @return current path
+#' @noRd
+
+get_path <- function() {
+    # display message if not set
+    if (!exists("exp_path", envir=exp_env)) {
+        stop("Path not set. Please use expos_set_path.", call. = FALSE)
+
+    # otherwise return current path
+    } else {
+        exp_path <- exp_env[["exp_path"]]
+        invisible(exp_path)
+    }
+}
 
 #' check_file_exists displays an error message and stops execution if
 #' the specified file does not exist.
@@ -167,15 +187,14 @@ get_transposed_wind_direction <- function(wdir) {
 #' @noRd
 
 west_north_west <- function(wind_direction, inflection_angle, t_dir, lat_long) {
+    # get path
+    exp_path <- get_path()
     
     # convert 1 degree of latitude to meters
     deg2meters <- 111195
-
-    # get current working directory
-    cwd <- getwd()
  
     # read dem file in GeoTiff format
-    dem_file <- paste(cwd, "/dem/dem.tif", sep="")
+    dem_file <- paste(exp_path, "/dem/dem.tif", sep="")
     check_file_exists(dem_file)
     dem_r <- raster::raster(dem_file)
   
@@ -347,15 +366,14 @@ west_north_west <- function(wind_direction, inflection_angle, t_dir, lat_long) {
 #' @noRd
 
 north_north_west <- function(wind_direction, inflection_angle, t_dir, lat_long) {
+    # get path
+    exp_path <- get_path()
     
     # convert 1 degree of latitude to meters
     deg2meters <- 111195
 
-    # get current working directory
-    cwd <- getwd()
- 
     # read dem file in GeoTiff format
-    dem_file <- paste(cwd, "/dem/dem.tif", sep="")
+    dem_file <- paste(exp_path, "/dem/dem.tif", sep="")
     check_file_exists(dem_file)
     dem_r <- raster::raster(dem_file)
   
@@ -535,11 +553,37 @@ expos_set_path <- function(exp_path, console=TRUE) {
         stop("Path does not exist")
     }
 
-    setwd(exp_path)
+    exp_env[["exp_path"]] <- exp_path
 
     if (console == TRUE) {
         cat("Path set to", exp_path, "\n")
     }
+}
+
+#' @description
+#' expos_get_path returns the current path for a set of model runs.
+#' @param console whether to display messages in console
+#' @return current path
+#' @export
+#' @rdname utility
+
+expos_get_path <- function(console=TRUE) {
+    if (exists("exp_path", envir=exp_env)) {
+        exp_path <- exp_env[["exp_path"]]
+
+        if (console == TRUE) {
+            cat(exp_path, "\n")
+        }
+
+        invisible(exp_path)
+
+    } else {
+        if (console == TRUE) {
+            cat("Path not set\n")
+        }
+
+        invisible(NULL)
+    }        
 }
 
 
@@ -570,6 +614,9 @@ expos_set_path <- function(exp_path, console=TRUE) {
 expos_model <- function(wind_direction, inflection_angle, lat_long=FALSE, orient=0,
     save=TRUE, console=TRUE) {
     
+    # get path
+    exp_path <- get_path()
+
     # announcement
     if (console == TRUE) {
         cat("... Modeling exposure ...\n")
@@ -578,9 +625,6 @@ expos_model <- function(wind_direction, inflection_angle, lat_long=FALSE, orient
     # convert 1 degree of latitude to meters
     deg2meters <- 111195
 
-    # get current working directory
-    cwd <- getwd()
- 
     # check wind direction
     if (wind_direction < 0 || wind_direction > 360) {
         stop("Please supply wind direction in range 0-360 degrees")
@@ -592,7 +636,7 @@ expos_model <- function(wind_direction, inflection_angle, lat_long=FALSE, orient
     }
 
     # read dem file in GeoTiff format
-    dem_path <- paste(cwd, "/dem/dem.tif", sep="")
+    dem_path <- paste(exp_path, "/dem/dem.tif", sep="")
     check_file_exists(dem_path)
     dem_r <- raster::raster(dem_path)
  
@@ -641,7 +685,7 @@ expos_model <- function(wind_direction, inflection_angle, lat_long=FALSE, orient
     # output
     if (save == TRUE) {
         # save modeled values in a Geotiff file
-        expos_file = paste(cwd, "/exposure/expos-", formatC(wind_direction, width=3, flag="0"), "-", 
+        expos_file = paste(exp_path, "/exposure/expos-", formatC(wind_direction, width=3, flag="0"), "-", 
             formatC(inflection_angle, width=2, flag="0"), ".tif", sep="")
 
         rgdal::setCPLConfigOption("GDAL_PAM_ENABLED", "FALSE")
@@ -678,13 +722,13 @@ expos_model <- function(wind_direction, inflection_angle, lat_long=FALSE, orient
 expos_damage <- function(hurricane, inflection_angle, protect, save=TRUE, 
     console=TRUE) {
     
+    # get path
+    exp_path <- get_path()
+
     # announcement
     if (console == TRUE) {
         cat("... Modeling damage ...\n")
     }
-
-    # get current working directory
-    cwd <- getwd()
 
     # check protect value
     if (protect < 0 || protect > 6) {
@@ -697,14 +741,14 @@ expos_damage <- function(hurricane, inflection_angle, protect, save=TRUE,
     for (i in 1:8) {
         wind_direction <- (i-1)*45
 
-        expos_file <- paste(cwd, "/exposure/expos-", formatC(wind_direction, width=3, flag="0"), "-", 
+        expos_file <- paste(exp_path, "/exposure/expos-", formatC(wind_direction, width=3, flag="0"), "-", 
             formatC(inflection_angle, width=2, flag="0"), ".tif", sep="")
     
         ee_r[[i]] <- raster::raster(expos_file)
     }
 
     # read dem file
-    dem_file <- paste(cwd, "/dem/dem.tif", sep="")
+    dem_file <- paste(exp_path, "/dem/dem.tif", sep="")
     dem_r <- raster::raster(dem_file)
 
     dem_rows <- dim(dem_r)[1]
@@ -716,7 +760,7 @@ expos_damage <- function(hurricane, inflection_angle, protect, save=TRUE,
     dem_ymx <- raster::extent(dem_r)[4]
 
     # read hurrecon file
-    hur_file <- paste(cwd, "/damage/", hurricane, ".tif", sep="")
+    hur_file <- paste(exp_path, "/damage/", hurricane, ".tif", sep="")
     ff_r <- raster::raster(hur_file, 2)  # enhanced Fujita scale
     cc_r <- raster::raster(hur_file, 4)  # cardinal wind direction (1-8)
 
@@ -729,7 +773,7 @@ expos_damage <- function(hurricane, inflection_angle, protect, save=TRUE,
     hur_ymx <- raster::extent(ff_r)[4]
 
     # read reproject file
-    reproject_file <- paste(cwd, "/damage/reproject.csv", sep="")
+    reproject_file <- paste(exp_path, "/damage/reproject.csv", sep="")
     rp <- read.csv(reproject_file, header=TRUE)
 
     lat_0 <- rp$lat_0
@@ -821,7 +865,7 @@ expos_damage <- function(hurricane, inflection_angle, protect, save=TRUE,
 
     if (save == TRUE) {
         # save modeled results in GeoTiff file
-        dam_file <- paste(cwd, "/damage/", hurricane, "-damage-", 
+        dam_file <- paste(exp_path, "/damage/", hurricane, "-damage-", 
             formatC(inflection_angle, width=2, flag="0"), "-", protect, ".tif", sep="")
         
         rgdal::setCPLConfigOption("GDAL_PAM_ENABLED", "FALSE")
@@ -852,19 +896,19 @@ expos_damage <- function(hurricane, inflection_angle, protect, save=TRUE,
 #' @rdname summarizing
 
 expos_summarize <- function(filename, console=TRUE) {
+    # get path
+    exp_path <- get_path()
+
     # announcement
     if (console == TRUE) {
         cat("... Summarizing raster ...\n")
     }
     
-    # get current working directory
-    cwd <- getwd()
- 
     # get subdirectory
     subdir <- get_subdirectory(filename)
 
     # read file in GeoTiff format
-    file_path <- paste(cwd, subdir, filename, ".tif", sep="")
+    file_path <- paste(exp_path, subdir, filename, ".tif", sep="")
     check_file_exists(file_path)
     rr <- raster::raster(file_path)
 
@@ -924,24 +968,24 @@ expos_summarize <- function(filename, console=TRUE) {
 expos_plot <- function(filename, title="", h_units="meters", v_units="meters",
     vector=TRUE, colormap="default", console=TRUE) {
     
+    # get path
+    exp_path <- get_path()
+
     if (console == TRUE) {
         cat("... Plotting raster ...\n")
     }
 
-    # get current working directory
-    cwd <- getwd()
- 
     # get subdirectory
     subdir <- get_subdirectory(filename)
 
     # read file in GeoTiff format
-    file_path <- paste(cwd, subdir, filename, ".tif", sep="")
+    file_path <- paste(exp_path, subdir, filename, ".tif", sep="")
     check_file_exists(file_path)
     rr <- raster::raster(file_path)
 
     # get vector boundary file
     if (vector == TRUE) {
-        boundaries_file <- paste(cwd, "/vector/boundaries.shp", sep="")
+        boundaries_file <- paste(exp_path, "/vector/boundaries.shp", sep="")
         check_file_exists(boundaries_file)
         boundaries <- rgdal::readOGR(boundaries_file)
     }

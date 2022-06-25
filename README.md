@@ -99,33 +99,37 @@ function.
 
 ```{r}	
 expos_set_path
+expos_get_path
 expos_model
 expos_damage
 expos_summarize
 expos_plot
 ```
 
-The expos_set_path function sets the path for the current set of model runs.
+The <i>expos_set_path</i> function sets the path for the current set of model runs. 
+The <i>expos_get_path</i> function returns the current path. Use <i>expos_set_path</i> 
+before using other functions.
 
-The expos_model function creates a raster file of topographic wind exposure 
+The <i>expos_model</i> function creates a raster file of topographic wind exposure 
 as a function of wind direction and inflection angle.
 
-The expos_damage function uses output from Hurrecon and Expos to create a raster
-file of wind damage where topograhic exposure at each location is determined 
+The <i>expos_damage</i> function uses output from Hurrecon and Expos to create a 
+raster file of wind damage where topograhic exposure at each location is determined 
 by peak wind direction. If a location is protected, the enhanced Fujita scale 
 rating is reduced by a specfied amount.
 
-The expos_summarize function displays summary information for a specified raster
-file, including the number of rows and columns, spatial extent, cell height and 
-width, and minimum and maximum value.
+The <i>expos_summarize</i> function displays summary information for a specified 
+raster file, including the number of rows and columns, spatial extent, cell height 
+and width, and minimum and maximum value.
 
-The expos_plot function creates a plot of a specified raster file.
+The <i>expos_plot</i> function creates a plot of a specified raster file.
 
 ## Examples
 
 
 ```{r}
 expos_set_path("c:/expos/r/mass_30m")
+expos_get_path()
 expos_model(wind_direction=90, inflection_angle=6)
 expos_damage("AL1938-06", inflection_angle=6, protect=2)
 expos_summarize("dem")

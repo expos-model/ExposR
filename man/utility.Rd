@@ -2,9 +2,12 @@
 % Please edit documentation in R/expos.R
 \name{expos_set_path}
 \alias{expos_set_path}
+\alias{expos_get_path}
 \title{Utility Functions}
 \usage{
 expos_set_path(exp_path, console = TRUE)
+
+expos_get_path(console = TRUE)
 }
 \arguments{
 \item{exp_path}{path for current model runs}
@@ -13,7 +16,11 @@ expos_set_path(exp_path, console = TRUE)
 }
 \value{
 no return value
+
+current path
 }
 \description{
 expos_set_path sets the path for the current set of model runs.
+
+expos_get_path returns the current path for a set of model runs.
 }
