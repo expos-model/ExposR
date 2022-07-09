@@ -7,17 +7,20 @@
 expos_plot(
   filename,
   title = "",
+  lat_long = NULL,
   h_units = "meters",
   v_units = "meters",
   vector = TRUE,
   colormap = "default",
-  console = TRUE
+  exp_path = NULL
 )
 }
 \arguments{
 \item{filename}{name of input raster file}
 
 \item{title}{plot title}
+
+\item{lat_long}{whether coordinate system is latitude/longitude (degrees)}
 
 \item{h_units}{horizontal units}
 
@@ -26,12 +29,16 @@ expos_plot(
 \item{vector}{whether to display vectory boundary files}
 
 \item{colormap}{color palette}
+
+\item{exp_path}{path for current set of model runs}
 }
 \value{
 no return value
 }
 \description{
-expos_plot creates a plot of a specified raster file. Optional arguments
-include plot title, horizontal units, vertical units, vector (boundary
-files) and color palette.
+expos_plot creates a plot of a raster file. The user can specify if
+coordinates are lat/long; otherwise lat/long is assumed if X values 
+are between -180 and 180 and Y values are between -90 and 90. Optional 
+arguments include plot title, horizontal units, vertical units, vector 
+boundary files, and color palette.
 }

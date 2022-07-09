@@ -14,48 +14,12 @@
 #   License along with this program.  If not, see
 #   <http://www.gnu.org/licenses/>.
 
-# EXPOS uses a digital elevation model (dem) to estimate exposed and
-# protected areas for a given wind direction and inflection angle. The
-# resulting topograhic exposure maps can be combined with output from 
-# the Hurrecon model to estimate hurricane wind damage across a region.
-# EXPOS contains two main functions:
+###############################################################################
 
-# 1. The expos_model function estmates topopgrahic exposure for a specified
-# wind direction and inflection angle. The input file is assumed to be a
-# raster of elevation values in GeoTiff format with missing values represented
-# by zero. Cells may be rectangular. If a geographic coordinate system is used,
-# horizontal and vertical units are assumed to be degrees and meters, 
-# respectively; otherwise horizontal and vertical units must be the same. 
-# Columns are assumed to be closely aligned with true North (0 degrees); 
-# if not, the map orientation (in degrees) must be specified. The name of 
-# the input file is assumed to be "dem.tif".
-
-# The output file is a raster file in GeoTiff format with the following
-# values: 0 = missing data, 1 = protected, 2 = exposed. Output files
-# are named "expos-xxx-yy.tif" where xxx is the wind direction and yy
-# is the inflection angle.
-
-# 2. The expos_damage function estimates regional hurricane damage as a 
-# function of topographic exposure to peak wind direction at each raster cell.
-# If a cell is protected, the enhanced Fujita scale (EF) rating is reduced
-# by a specified amount. This function requires a hurricane GeoTiff file 
-# created by Hurrecon, eight exposure files created by Expos (N, NE, E, etc), 
-# and a reprojection file in csv format that contains lat/long coordinates 
-# for the lower left and upper right corners of the digital elevation model.
-
-# The output file is a raster file in GeoTiff format with the following values:
-# 0 = missing, 1 = no damage, 2 = F0 damage, 3 = F1 damage, 4 = F2 damage, 
-# 5 = F3 damage, 6 = F4 damage, 7 = F5 damage. Output files are named 
-# "hhhh-damage-yy-z.tif" where hhhh is the hurricane ID, yy is the inflection 
-# angle, and z is the reduction in EF rating for protected areas.
-
-# Emery R. Boose
-# June 2022
-
-# R version 4.2.0
-
-# Required packages:
-#  raster
+# The EXPOS model uses a digital elevation model (dem) to estimate exposed
+# and protected areas for a given hurricane wind direction and inflection angle.
+# The resulting topograhic exposure maps can be combined with output from the 
+# HURRECON model to estimate hurricane wind damage across a region.
 
 ### INTERNAL FUNCTIONS ####################################
 
@@ -64,7 +28,7 @@
 exp_env <- new.env(parent=emptyenv())
 
 #' get_path returns the path for the current set of model runs.
-#' If not set, a message is displayed.
+#' If not set, an error message is displayed.
 #' @return current path
 #' @noRd
 
@@ -92,8 +56,8 @@ check_file_exists <- function(file_name) {
     }
 }
 
-#' get_subdirectory returns the subdirectory for a given filename
-#' and stops execution if the filename is not supported.
+#' get_subdirectory returns the subdirectory for a given file name
+#' and stops execution if the file name is not supported.
 #' @param filename name of file
 #' @return subdirectory
 #' @noRd
@@ -110,6 +74,25 @@ get_subdirectory <- function(filename) {
     }
 
     return(subdir)
+}
+
+#' check_lat_long tries to determine if the raster coordinate system
+#' is latitude/longitude in degrees.  It returns TRUE if X values are 
+#' between -180 and 180 and Y values are between -90 and 90; otherwise
+#' it returns FALSE.
+#' @param xmn minimum X value
+#' @param xmx maximum X value
+#' @param ymn minimum Y value
+#' @param ymx maximum Y value
+#' @return whether coordinates are lat/long (TRUE or FALSE)
+#' @noRd
+
+check_lat_long <- function(xmn, xmx, ymn, ymx) {
+    if (xmn >= -180 && xmx <= 180 && ymn >= -90 && ymx <= 90) {
+        return(TRUE)
+    } else {
+        return(FALSE)
+    }
 }
 
 #' get_row_order returns TRUE if the row order remains unchanged 
@@ -175,7 +158,7 @@ get_transposed_wind_direction <- function(wdir) {
     return(t_dir)
 }
 
-#' west_north_west creates and saves a raster of exposure values for
+#' west_north_west creates and returns a raster of exposure values for
 #' transposed wind directions between 270 degrees and the cell diagonal 
 #' (WNW). The transposed matrix of elevation values is processed in column
 #' major order.
@@ -214,7 +197,7 @@ west_north_west <- function(wind_direction, inflection_angle, t_dir, lat_long) {
 
     # adjust if lat/long
     if (lat_long == TRUE) {
-        lat_mid <- (xmx-xmn)/2
+        lat_mid <- ymn + (ymx-ymn)/2
         cell_x <- cell_x*deg2meters*cos(lat_mid*pi/180)
         cell_y <- cell_y*deg2meters
     }
@@ -268,7 +251,7 @@ west_north_west <- function(wind_direction, inflection_angle, t_dir, lat_long) {
     for (j in 1:ncols) {    
         # display every 10th col number
         if (j %% 10 == 0) {
-            cat("\rcol", j)
+            message(paste("\rcol", j), appendLF=FALSE)
         }
 
         # first column exposed by default
@@ -354,7 +337,7 @@ west_north_west <- function(wind_direction, inflection_angle, t_dir, lat_long) {
     invisible(expos_r)
 }
 
-#' north_north_west creates and saves a raster of exposure values for
+#' north_north_west creates and returns a raster of exposure values for
 #' transposed wind directions between the cell diagonal and 360 degrees 
 #' (NNW). The transposed matrix of elevation values is processed in row
 #' major order.
@@ -393,7 +376,7 @@ north_north_west <- function(wind_direction, inflection_angle, t_dir, lat_long) 
 
     # adjust if lat/long
     if (lat_long == TRUE) {
-        lat_mid <- (xmx-xmn)/2
+        lat_mid <- ymn + (ymx-ymn)/2
         cell_x <- cell_x*deg2meters*cos(lat_mid*pi/180)
         cell_y <- cell_y*deg2meters
     }
@@ -447,7 +430,7 @@ north_north_west <- function(wind_direction, inflection_angle, t_dir, lat_long) 
     for (i in 1:nrows) {
         # display every 10th row number
         if (i %% 10 == 0) {
-            cat("\rrow", i)
+            message(paste("\rrow", i), appendLF=FALSE)
         }
 
         # first row is exposed by default
@@ -540,12 +523,11 @@ north_north_west <- function(wind_direction, inflection_angle, t_dir, lat_long) 
 #' @description
 #' expos_set_path sets the path for the current set of model runs.
 #' @param exp_path path for current model runs
-#' @param console whether to display messages in console
 #' @return no return value
 #' @export
 #' @rdname utility
 
-expos_set_path <- function(exp_path, console=TRUE) {
+expos_set_path <- function(exp_path) {
     if (exp_path == "") {
         stop("Need to enter a path")
 
@@ -554,34 +536,24 @@ expos_set_path <- function(exp_path, console=TRUE) {
     }
 
     exp_env[["exp_path"]] <- exp_path
-
-    if (console == TRUE) {
-        cat("Path set to", exp_path, "\n")
-    }
+        message(paste("Path set to", exp_path))
 }
 
 #' @description
 #' expos_get_path returns the current path for a set of model runs.
-#' @param console whether to display messages in console
 #' @return current path
 #' @export
 #' @rdname utility
 
-expos_get_path <- function(console=TRUE) {
+expos_get_path <- function() {
     if (exists("exp_path", envir=exp_env)) {
         exp_path <- exp_env[["exp_path"]]
 
-        if (console == TRUE) {
-            cat(exp_path, "\n")
-        }
-
+        message(exp_path)
         invisible(exp_path)
 
     } else {
-        if (console == TRUE) {
-            cat("Path not set\n")
-        }
-
+        message("Path not set")
         invisible(NULL)
     }        
 }
@@ -595,32 +567,39 @@ expos_get_path <- function(console=TRUE) {
 #' expos_model uses a raster file of elevation values, a specified wind
 #' direction, and a specified inflection angle to create a raster file
 #' of wind exposure values (0 = missing data, 1 = protected, 2 = exposed).
-#' If a geographic coordinate system is used, horizontal and vertical units 
-#' are assumed to be degrees and meters, respectively; otherwise horizontal 
-#' and vertical units must be the same. Columns are assumed to be closely 
-#' aligned with true North (0 degrees); if not, the map orientation must 
-#' be specified. The name of the input file is assumed to be "dem.tif".
+#' The user can specify if coordinates are lat/long; otherwise lat/long 
+#' is assumed if X values are between -180 and 180 and Y values are between
+#' -90 and 90. If lat/long, horizontal and vertical units are assumed 
+#' to be degrees and meters, respectively; otherwise horizontal and vertical 
+#' units must be the same. Columns are assumed to be closely aligned with 
+#' true North (0 degrees); if not, the map orientation (azimuth) must be 
+#' specified in degrees. The name of the input file is assumed to be "dem.tif".
 
 #' @param wind_direction wind direction (degrees)
 #' @param inflection_angle inflection angle (degrees)
 #' @param lat_long whether coordinate system is latitude/longitude (degrees)
 #' @param orient map orientation (degrees)
 #' @param save whether to save results to file
-#' @param console whether to display messages in console
+#' @param exp_path path for current set of model runs
 #' @return raster of modeled exposure values
 #' @export
+#' @examples
+#' exp_path <- system.file("", package="ExposR", mustWork=TRUE)
+#' expos_model(wind_direction=135, inflection_angle=6, save=FALSE, exp_path=exp_path)
 #' @rdname modeling
 
-expos_model <- function(wind_direction, inflection_angle, lat_long=FALSE, orient=0,
-    save=TRUE, console=TRUE) {
+expos_model <- function(wind_direction, inflection_angle, lat_long=NULL, orient=0,
+    save=TRUE, exp_path=NULL) {
     
     # get path
-    exp_path <- get_path()
+    if (!is.null(exp_path)) {
+        expos_set_path(exp_path)
+    } else {
+        exp_path <- get_path()
+    }
 
     # announcement
-    if (console == TRUE) {
-        cat("... Modeling exposure ...\n")
-    }
+    message("... Modeling exposure ...")
 
     # convert 1 degree of latitude to meters
     deg2meters <- 111195
@@ -649,14 +628,19 @@ expos_model <- function(wind_direction, inflection_angle, lat_long=FALSE, orient
     xmx <- raster::extent(dem_r)[2]
     ymn <- raster::extent(dem_r)[3]
     ymx <- raster::extent(dem_r)[4]
-  
+ 
     # calculate cell dimensions
     cell_x <- (xmx-xmn)/ncols
     cell_y <- (ymx-ymn)/nrows
 
+    # check for lat/long
+    if (is.null(lat_long)) {
+        lat_long <- check_lat_long(xmn, xmx, ymn, ymx)
+    }
+
     # adjust if lat/long
     if (lat_long == TRUE) {
-        lat_mid <- (xmx-xmn)/2
+        lat_mid <- ymn + (ymx-ymn)/2
         cell_x <- cell_x*deg2meters*cos(lat_mid*pi/180)
         cell_y <- cell_y*deg2meters
     }
@@ -691,9 +675,7 @@ expos_model <- function(wind_direction, inflection_angle, lat_long=FALSE, orient
         rgdal::setCPLConfigOption("GDAL_PAM_ENABLED", "FALSE")
         raster::writeRaster(expos_r, expos_file, overwrite=TRUE)
     
-        if (console == TRUE) {
-            cat("\nSaving to", expos_file, "\n")
-        }
+        message(paste("\nSaving to", expos_file))
     }
 
     # return modeled values as raster
@@ -701,34 +683,37 @@ expos_model <- function(wind_direction, inflection_angle, lat_long=FALSE, orient
 }
 
 #' @description
-#' expos_damage uses output from Hurrecon and Expos to create a raster
-#' of hurricane wind damage where topograhic exposure at each location
-#' is determined by peak wind direction. If a location is protected, 
-#' the enhanced Fujita scale rating is reduced by a specified amount.
-#' This function requires a hurricane tif file created by Hurrecon, 
-#' eight exposure files created by Expos (N, NE, E, etc), and a reprojection
-#' file in csv format that contains lat long coordinates for the lower left 
-#' and upper right corners of the digital elevation model.
+#' expos_damage uses output from the EXPOS and HURRECON models to create 
+#' a raster of hurricane wind damage where topographic exposure at each 
+#' location is determined by peak wind direction. If a location is protected, 
+#' the enhanced Fujita scale rating from HURRECON is reduced by a specified 
+#' amount. This function requires a hurricane file in GeoTiff format created 
+#' by HURRECON, exposure files created by EXPOS for the eight cardinal wind 
+#' directions (N, NE, E, etc), and a reprojection file in CSV format 
+#' (reproject.csv) that contains lat/long coordinates in degrees for the 
+#' lower left and upper right corners of the digital elevation model.
 #' @param hurricane hurricane name (as it appears in tif file)
 #' @param inflection_angle inflection angle (degrees)
 #' @param protect how much to reduce damage in protected areas (Fujita 
 #' scale ratings)
 #' @param save whether to save results to file
-#' @param console whether to display messages in console
+#' @param exp_path path for current set of model runs
 #' @return raster of modeled wind damage values
 #' @export
 #' @rdname modeling
 
 expos_damage <- function(hurricane, inflection_angle, protect, save=TRUE, 
-    console=TRUE) {
+    exp_path=NULL) {
     
     # get path
-    exp_path <- get_path()
+    if (!is.null(exp_path)) {
+        expos_set_path(exp_path)
+    } else {
+        exp_path <- get_path()
+    }
 
     # announcement
-    if (console == TRUE) {
-        cat("... Modeling damage ...\n")
-    }
+    message("... Modeling damage ...")
 
     # check protect value
     if (protect < 0 || protect > 6) {
@@ -774,7 +759,7 @@ expos_damage <- function(hurricane, inflection_angle, protect, save=TRUE,
 
     # read reproject file
     reproject_file <- paste(exp_path, "/damage/reproject.csv", sep="")
-    rp <- read.csv(reproject_file, header=TRUE)
+    rp <- utils::read.csv(reproject_file, header=TRUE)
 
     lat_0 <- rp$lat_0
     lon_0 <- rp$lon_0
@@ -798,11 +783,9 @@ expos_damage <- function(hurricane, inflection_angle, protect, save=TRUE,
 
     # calculate damage values
     for (i in 1:dem_rows) {
-        if (console == TRUE) {
-            # display every 10th row number
-            if (i %% 10 == 0) {
-                cat("\rrow", i)
-            }
+        # display every 10th row number
+        if (i %% 10 == 0) {
+            message(paste("\rrow", i), appendLF=FALSE)
         }
 
         for (j in 1:dem_cols) {
@@ -871,9 +854,7 @@ expos_damage <- function(hurricane, inflection_angle, protect, save=TRUE,
         rgdal::setCPLConfigOption("GDAL_PAM_ENABLED", "FALSE")
         raster::writeRaster(dam_r, dam_file, overwrite=TRUE)
 
-        if (console == TRUE) {
-            cat("\nSaving to", dam_file, "\n")
-        }
+        message(paste("\nSaving to", dam_file))
     }
 
     # return modeled results as raster
@@ -888,22 +869,33 @@ expos_damage <- function(hurricane, inflection_angle, protect, save=TRUE,
 #' @description
 #' expos_summarize displays summary information for a specified raster
 #' file, including the number of rows and columns, spatial extent, cell
-#' height and width, and minimum and maximum value.
+#' height and width, and minimum and maximum value. The user can specify 
+#' if coordinates are lat/long; otherwise lat/long is assumed if X values 
+#' are between -180 and 180 and Y values are between -90 and 90.
 #' @param filename name of input raster file
+#' @param lat_long whether coordinate system is latitude/longitude (degrees)
 #' @param console whether to display results in console
+#' @param exp_path path for current set of model runs
 #' @return a string containing summary information
 #' @export
 #' @rdname summarizing
 
-expos_summarize <- function(filename, console=TRUE) {
+expos_summarize <- function(filename, lat_long=NULL, console=TRUE, 
+    exp_path=NULL) {
+    
     # get path
-    exp_path <- get_path()
+    if (!is.null(exp_path)) {
+        expos_set_path(exp_path)
+    } else {
+        exp_path <- get_path()
+    }
 
     # announcement
-    if (console == TRUE) {
-        cat("... Summarizing raster ...\n")
-    }
+    message("... Summarizing raster ...")
     
+    # convert 1 degree of latitude to meters
+    deg2meters <- 111195
+
     # get subdirectory
     subdir <- get_subdirectory(filename)
 
@@ -926,17 +918,29 @@ expos_summarize <- function(filename, console=TRUE) {
     cell_x <- (xmx-xmn)/ncols
     cell_y <- (ymx-ymn)/nrows
 
+    # check for lat/long
+    if (is.null(lat_long)) {
+        lat_long <- check_lat_long(xmn, xmx, ymn, ymx)
+    }
+
+    # adjust if lat/long
+    if (lat_long == TRUE) {
+        lat_mid <- ymn + (ymx-ymn)/2
+        cell_x <- cell_x*deg2meters*cos(lat_mid*pi/180)
+        cell_y <- cell_y*deg2meters
+    }
+
     # get min & max values
     val_min <- raster::minValue(rr)
     val_max <- raster::maxValue(rr)
 
     # create display string
     st <- paste("Rows: ", nrows, "  Columns: ", ncols, "\n", sep="")
-    st <- paste(st, "Northing: ", round(ymn), " to ", round(ymx), "\n", sep="")
-    st <- paste(st, "Easting: ", round(xmn), " to ", round(xmx), "\n", sep="")
-    st <- paste(st, "Cell height: ", round(cell_y), "\n", sep="")
-    st <- paste(st, "Cell width: ", round(cell_x), "\n", sep="")
-    st <- paste(st, "Values: ", round(val_min, 1), " to ", round(val_max, 1), "\n", sep="")
+    st <- paste(st, "Northing: ", round(ymn, 6), " to ", round(ymx, 6), "\n", sep="")
+    st <- paste(st, "Easting: ", round(xmn, 6), " to ", round(xmx, 6), "\n", sep="")
+    st <- paste(st, "Cell height: ", round(cell_y, 6), "\n", sep="")
+    st <- paste(st, "Cell width: ", round(cell_x, 6), "\n", sep="")
+    st <- paste(st, "Values: ", round(val_min, 6), " to ", round(val_max, 6), "\n", sep="")
     
     # display results in console
     if (console == TRUE) {
@@ -952,28 +956,34 @@ expos_summarize <- function(filename, console=TRUE) {
 #' @title
 #' Plotting Functions
 #' @description
-#' expos_plot creates a plot of a specified raster file. Optional arguments
-#' include plot title, horizontal units, vertical units, vector (boundary
-#' files) and color palette.
+#' expos_plot creates a plot of a raster file. The user can specify if
+#' coordinates are lat/long; otherwise lat/long is assumed if X values 
+#' are between -180 and 180 and Y values are between -90 and 90. Optional 
+#' arguments include plot title, horizontal units, vertical units, vector 
+#' boundary files, and color palette. 
 #' @param filename name of input raster file
 #' @param title plot title
+#' @param lat_long whether coordinate system is latitude/longitude (degrees)
 #' @param h_units horizontal units
 #' @param v_units vertical units
 #' @param vector whether to display vectory boundary files
 #' @param colormap color palette
+#' @param exp_path path for current set of model runs
 #' @return no return value
 #' @export
 #' @rdname plotting
 
-expos_plot <- function(filename, title="", h_units="meters", v_units="meters",
-    vector=TRUE, colormap="default", console=TRUE) {
+expos_plot <- function(filename, title="", lat_long=NULL, h_units="meters", 
+    v_units="meters", vector=TRUE, colormap="default", exp_path=NULL) {
     
     # get path
-    exp_path <- get_path()
-
-    if (console == TRUE) {
-        cat("... Plotting raster ...\n")
+    if (!is.null(exp_path)) {
+        expos_set_path(exp_path)
+    } else {
+        exp_path <- get_path()
     }
+
+    message("... Plotting raster ...")
 
     # get subdirectory
     subdir <- get_subdirectory(filename)
@@ -992,6 +1002,22 @@ expos_plot <- function(filename, title="", h_units="meters", v_units="meters",
 
     rr_min <- raster::minValue(rr)
     rr_max <- raster::maxValue(rr)
+
+    # check for lat/long
+    if (is.null(lat_long)) {
+        xmn <- raster::extent(rr)[1]
+        xmx <- raster::extent(rr)[2]
+        ymn <- raster::extent(rr)[3]
+        ymx <- raster::extent(rr)[4]
+
+        lat_long <- check_lat_long(xmn, xmx, ymn, ymx)
+    }
+
+    # adjust units
+    if (lat_long == TRUE) {
+        h_units = "degrees"
+        v_units = "meters"
+    }
 
     # default palettes
     if (length(colormap) == 1) {
@@ -1013,12 +1039,12 @@ expos_plot <- function(filename, title="", h_units="meters", v_units="meters",
 
             # dem, etc
             } else {
-                cmap <- rev(terrain.colors(255))
+                cmap <- rev(grDevices::terrain.colors(255))
             }
         
         # raster palette
         } else if (colormap == "r_default") {
-            cmap <- rev(terrain.colors(255))
+            cmap <- rev(grDevices::terrain.colors(255))
         }
 
     # user-specified palette
@@ -1027,7 +1053,10 @@ expos_plot <- function(filename, title="", h_units="meters", v_units="meters",
     }
 
     # create plot
-    par(mar=c(5.1, 4.6, 4.1, 2.1))
+    oldpar <- graphics::par(no.readonly=TRUE)
+    on.exit(graphics::par(oldpar))
+
+    graphics::par(mar=c(5.1, 4.6, 4.1, 2.1))
 
     if (grepl("dem", filename)) {
         if (title == "") {

@@ -1,19 +1,36 @@
 Package: ExposR
-Title: Models topopgrahic exposure to hurricane winds
+Title: Models Topopgrahic Exposure to Hurricane Winds
 Version: 1.0
-Date: 2022-06-25
+Date: 2022-07-10
 Authors@R: c( person("Emery", "Boose", role = c("aut", "cre"),
                       email = "boose@fas.harvard.edu"),
               person("President and Fellows of Harvard College", role = "cph"))
-Description: Models exposure to hurricane winds as a function of local
-    topography, wind direction, and wind inflection angle. Models hurricane
-    wind damage as a function of exposure and peak wind direction.
+Description: The EXPOS model uses a digital elevation model (dem) to estimate 
+    exposed and protected areas for a given hurricane wind direction and 
+    inflection angle. The resulting topograhic exposure maps can be combined 
+    with output from the HURRECON model to estimate hurricane wind damage 
+    across a region. For details on the original version of the EXPOS model 
+    written in Borland Pascal, see: Boose, Foster, and Fluet (1994) 
+    <doi:10.2307/2937142>, Boose, Chamberlin, and Foster (2001) 
+    <doi:10.1890/0012-9615(2001)071[0027:LARIOH]2.0.CO;2>, and Boose, 
+    Serrano, and Foster (2004) <doi:10.1890/02-4057>.
 Depends: R (>= 4.0.0)
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
 Imports: 
-    raster
+    graphics,
+    grDevices,
+    raster,
+    rgdal,
+    utils
+Suggests: 
+    knitr,
+    qpdf,
+    testthat (>= 3.0.0),
+    rmarkdown
 URL: https://github.com/expos-model/ExposR
 BugReports: https://github.com/expos-model/ExposR/issues
 RoxygenNote: 7.2.0
+VignetteBuilder: knitr
+Config/testthat/edition: 3
