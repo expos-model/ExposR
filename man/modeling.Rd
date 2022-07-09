@@ -8,13 +8,19 @@
 expos_model(
   wind_direction,
   inflection_angle,
-  lat_long = FALSE,
+  lat_long = NULL,
   orient = 0,
   save = TRUE,
-  console = TRUE
+  exp_path = NULL
 )
 
-expos_damage(hurricane, inflection_angle, protect, save = TRUE, console = TRUE)
+expos_damage(
+  hurricane,
+  inflection_angle,
+  protect,
+  save = TRUE,
+  exp_path = NULL
+)
 }
 \arguments{
 \item{wind_direction}{wind direction (degrees)}
@@ -27,7 +33,7 @@ expos_damage(hurricane, inflection_angle, protect, save = TRUE, console = TRUE)
 
 \item{save}{whether to save results to file}
 
-\item{console}{whether to display messages in console}
+\item{exp_path}{path for current set of model runs}
 
 \item{hurricane}{hurricane name (as it appears in tif file)}
 
@@ -43,18 +49,25 @@ raster of modeled wind damage values
 expos_model uses a raster file of elevation values, a specified wind
 direction, and a specified inflection angle to create a raster file
 of wind exposure values (0 = missing data, 1 = protected, 2 = exposed).
-If a geographic coordinate system is used, horizontal and vertical units 
-are assumed to be degrees and meters, respectively; otherwise horizontal 
-and vertical units must be the same. Columns are assumed to be closely 
-aligned with true North (0 degrees); if not, the map orientation must 
-be specified. The name of the input file is assumed to be "dem.tif".
+The user can specify if coordinates are lat/long; otherwise lat/long 
+is assumed if X values are between -180 and 180 and Y values are between
+-90 and 90. If lat/long, horizontal and vertical units are assumed 
+to be degrees and meters, respectively; otherwise horizontal and vertical 
+units must be the same. Columns are assumed to be closely aligned with 
+true North (0 degrees); if not, the map orientation (azimuth) must be 
+specified in degrees. The name of the input file is assumed to be "dem.tif".
 
-expos_damage uses output from Hurrecon and Expos to create a raster
-of hurricane wind damage where topograhic exposure at each location
-is determined by peak wind direction. If a location is protected, 
-the enhanced Fujita scale rating is reduced by a specified amount.
-This function requires a hurricane tif file created by Hurrecon, 
-eight exposure files created by Expos (N, NE, E, etc), and a reprojection
-file in csv format that contains lat long coordinates for the lower left 
-and upper right corners of the digital elevation model.
+expos_damage uses output from the EXPOS and HURRECON models to create 
+a raster of hurricane wind damage where topographic exposure at each 
+location is determined by peak wind direction. If a location is protected, 
+the enhanced Fujita scale rating from HURRECON is reduced by a specified 
+amount. This function requires a hurricane file in GeoTiff format created 
+by HURRECON, exposure files created by EXPOS for the eight cardinal wind 
+directions (N, NE, E, etc), and a reprojection file in CSV format 
+(reproject.csv) that contains lat/long coordinates in degrees for the 
+lower left and upper right corners of the digital elevation model.
+}
+\examples{
+exp_path <- system.file("", package="ExposR", mustWork=TRUE)
+expos_model(wind_direction=135, inflection_angle=6, save=FALSE, exp_path=exp_path)
 }

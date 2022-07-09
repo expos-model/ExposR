@@ -1,3 +1,13 @@
+---
+title: "Overview of ExposR"
+date: "10 July 2022"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Overview of ExposR}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
 ## EXPOS Model
 
 The EXPOS model uses a digital elevation model (dem) to estimate exposed and
@@ -43,17 +53,11 @@ The output file is a raster file in GeoTiff format with the following values:
 "hhhh-damage-yy-z.tif" where hhhh is the hurricane ID, yy is the inflection 
 angle, and z is the reduction in EF rating for protected areas.
 
-EXPOS is available in both R (ExposR) and Python (ExposPython) versions. 
-The model is an updated version of the original EXPOS model written in Borland 
-Pascal for use with Idrisi (see below for details).
-
-Please note: both versions are currently under development and subject to change.
-
 ## Getting Started
 
 Here are the basic steps for using the model. Please see below for more details.
 
-1. Download the R or Python version of the model from GitHub.
+1. Install and load the R package for the model (ExposR).
 2. Create a directory for a particular study area with subdirectories as described 
 below.
 3. Copy the digital elevation file to the <i>dem</i> subdirectory and rename it 
@@ -74,7 +78,7 @@ be specified in degrees.
 The user specifies a directory (<i>exp_path</i>) for a given study area. Input and 
 output files are stored on the following subdirectories of this directory:
 
-```{r}
+```
 exp_path/dem
 exp_path/exposure
 exp_path/damage
@@ -88,20 +92,12 @@ reprojection file, and output files from the <i>expos_damage</i> function.
 Shapefiles that contain geographic and political boundaries for viewing results
 are stored on the <i>vector</i> subdirectory.
 
-To run the model, run <i>expos.R</i> (R) or <i>expos.py</i> (Python). 
-
-The R version may also be installed as an R package using the devtools package:
-
-```{r}	
-devtools::install_github("expos-model/ExposR")
-```
-
-This has the advantage of providing readily accessible help messages for each 
-function.
+To run the model, create the above directories, copy the input files to their
+respective subdirectories, and use the <i>library</i> function to load ExposR.
 
 ## Model Functions
 
-```{r}	
+```
 expos_set_path
 expos_get_path
 expos_model
@@ -130,7 +126,7 @@ The <i>expos_plot</i> function creates a plot of a specified raster file.
 
 ## Examples
 
-```{r}
+```
 expos_set_path("c:/expos/wach_30m")
 expos_get_path()
 
@@ -151,12 +147,12 @@ for spatial visualization. The model was used in published studies of the ecolog
 impacts of historical hurricanes in New England and Puerto Rico:
 
 * Boose, E. R., Foster, D. R., Fluet, M. 1994. Hurricane impacts to tropical and 
-temperate forest landscapes. Ecological Monographs 64: 369-400. doi:10.2307/2937142.
+temperate forest landscapes. Ecological Monographs 64: 369-400. doi.org/10.2307/2937142.
 
 * Boose, E. R., Chamberlin, K. E., Foster, D. R. 2001. Landscape and regional impacts 
 of hurricanes in New England. Ecological Monographs 71: 27-48.
-doi:10.1890/0012-9615(2001)071[0027:LARIOH]2.0.CO;2.
+doi.org/10.1890/0012-9615(2001)071[0027:LARIOH]2.0.CO;2.
 
 * Boose, E. R., Serrano, M. I., Foster, D. R. 2004. Landscape and regional impacts of 
-hurricanes in Puerto Rico. Ecological Monographs 74: 335-352. doi:10.1890/02-4057.
+hurricanes in Puerto Rico. Ecological Monographs 74: 335-352. doi.org/10.1890/02-4057.
 

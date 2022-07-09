@@ -1,0 +1,5 @@
+/ExposR.Rcheck/
+*.tar.gz
+.RHistory
+/doc/
+/Meta/

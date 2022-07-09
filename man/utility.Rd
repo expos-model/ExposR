@@ -5,14 +5,12 @@
 \alias{expos_get_path}
 \title{Utility Functions}
 \usage{
-expos_set_path(exp_path, console = TRUE)
+expos_set_path(exp_path)
 
-expos_get_path(console = TRUE)
+expos_get_path()
 }
 \arguments{
 \item{exp_path}{path for current model runs}
-
-\item{console}{whether to display messages in console}
 }
 \value{
 no return value

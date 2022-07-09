@@ -4,12 +4,16 @@
 \alias{expos_summarize}
 \title{Summarizing Functions}
 \usage{
-expos_summarize(filename, console = TRUE)
+expos_summarize(filename, lat_long = NULL, console = TRUE, exp_path = NULL)
 }
 \arguments{
 \item{filename}{name of input raster file}
 
+\item{lat_long}{whether coordinate system is latitude/longitude (degrees)}
+
 \item{console}{whether to display results in console}
+
+\item{exp_path}{path for current set of model runs}
 }
 \value{
 a string containing summary information
@@ -17,5 +21,7 @@ a string containing summary information
 \description{
 expos_summarize displays summary information for a specified raster
 file, including the number of rows and columns, spatial extent, cell
-height and width, and minimum and maximum value.
+height and width, and minimum and maximum value. The user can specify 
+if coordinates are lat/long; otherwise lat/long is assumed if X values 
+are between -180 and 180 and Y values are between -90 and 90.
 }
