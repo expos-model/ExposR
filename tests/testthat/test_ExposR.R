@@ -8,9 +8,9 @@ expect_snapshot_value(expos_summarize(filename="dem", exp_path=exp_path), test.e
 	style="serialize", cran=FALSE)
 
 # Test expos_model
-test.expected <- system.file("exposure", "expos-135-06.tif", package="ExposR", mustWork=TRUE)
+test.expected <- system.file("exposure", "expos-090-06.tif", package="ExposR", mustWork=TRUE)
 exp_path <- system.file("", package="ExposR", mustWork=TRUE)
-expect_snapshot_value(expos_model(wind_direction=135, inflection_angle=6, save=FALSE, 
+expect_snapshot_value(expos_model(wind_direction=90, inflection_angle=6, save=FALSE, 
 	exp_path=exp_path), test.expected, style="serialize", cran=FALSE)
 
 # Test expos_damage

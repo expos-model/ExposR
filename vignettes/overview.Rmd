@@ -130,13 +130,13 @@ The <i>expos_plot</i> function creates a plot of a specified raster file.
 expos_set_path("c:/expos/wach_30m")
 expos_get_path()
 
-expos_model(wind_direction=135, inflection_angle=6)
+expos_model(wind_direction=90, inflection_angle=6)
 expos_damage(hurricane="AL1938-06", inflection_angle=6, protect=2)
 
 expos_summarize("dem")
 
 expos_plot("dem")
-expos_plot("expos-135-06")
+expos_plot("expos-090-06")
 expos_plot("AL1938-06-damage-06-2")
 ```
 

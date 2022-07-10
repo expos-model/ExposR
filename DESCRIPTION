@@ -7,7 +7,7 @@ Authors@R: c( person("Emery", "Boose", role = c("aut", "cre"),
               person("President and Fellows of Harvard College", role = "cph"))
 Description: The EXPOS model uses a digital elevation model (DEM) to estimate 
     exposed and protected areas for a given hurricane wind direction and 
-    inflection angle. The resulting topograhic exposure maps can be combined 
+    inflection angle. The resulting topographic exposure maps can be combined 
     with output from the HURRECON model to estimate hurricane wind damage 
     across a region. For details on the original version of the EXPOS model 
     written in Borland Pascal, see: Boose, Foster, and Fluet (1994) 
