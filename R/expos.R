@@ -16,7 +16,7 @@
 
 ###############################################################################
 
-# The EXPOS model uses a digital elevation model (dem) to estimate exposed
+# The EXPOS model uses a digital elevation model (DEM) to estimate exposed
 # and protected areas for a given hurricane wind direction and inflection angle.
 # The resulting topograhic exposure maps can be combined with output from the 
 # HURRECON model to estimate hurricane wind damage across a region.
@@ -165,7 +165,7 @@ get_transposed_wind_direction <- function(wdir) {
 #' @param wind_direction wind direction (degrees)
 #' @param inflection_angle inflection angle (degrees)
 #' @param t_dir transposed wind direction (degrees)
-#' @param lat_long whether coordinate system is latitude/longitude (degrees)
+#' @param lat_long whether coordinate system is latitude/longitude
 #' @return raster of modeled exposure values
 #' @noRd
 
@@ -176,7 +176,7 @@ west_north_west <- function(wind_direction, inflection_angle, t_dir, lat_long) {
     # convert 1 degree of latitude to meters
     deg2meters <- 111195
  
-    # read dem file in GeoTiff format
+    # read DEM file in GeoTiff format
     dem_file <- paste(exp_path, "/dem/dem.tif", sep="")
     check_file_exists(dem_file)
     dem_r <- raster::raster(dem_file)
@@ -344,7 +344,7 @@ west_north_west <- function(wind_direction, inflection_angle, t_dir, lat_long) {
 #' @param wind_direction wind direction (degrees)
 #' @param inflection_angle inflection angle (degrees)
 #' @param t_dir transposed wind direction (degrees)
-#' @param lat_long whether coordinate system is latitude/longitude (degrees)
+#' @param lat_long whether coordinate system is latitude/longitude
 #' @return raster of modeled exposure values
 #' @noRd
 
@@ -577,7 +577,7 @@ expos_get_path <- function() {
 
 #' @param wind_direction wind direction (degrees)
 #' @param inflection_angle inflection angle (degrees)
-#' @param lat_long whether coordinate system is latitude/longitude (degrees)
+#' @param lat_long whether coordinate system is latitude/longitude
 #' @param orient map orientation (degrees)
 #' @param save whether to save results to file
 #' @param exp_path path for current set of model runs
@@ -649,10 +649,10 @@ expos_model <- function(wind_direction, inflection_angle, lat_long=NULL, orient=
     cell_diagonal <- 360 - 180*atan(cell_x/cell_y)/pi;
 
     # adjust wind direction for map orientation
-    wind_direction <- wind_direction + orient
+    wind_direction <- wind_direction - orient
 
-    if (wind_direction > 360) {
-        wind_direction <- wind_direction - 360
+    if (wind_direction < 0) {
+        wind_direction <- wind_direction + 360
     }
 
     # get transposed wind direction
@@ -694,8 +694,8 @@ expos_model <- function(wind_direction, inflection_angle, lat_long=NULL, orient=
 #' lower left and upper right corners of the digital elevation model.
 #' @param hurricane hurricane name (as it appears in tif file)
 #' @param inflection_angle inflection angle (degrees)
-#' @param protect how much to reduce damage in protected areas (Fujita 
-#' scale ratings)
+#' @param protect how much to reduce damage in protected areas (number of 
+#' Fujita scale ratings)
 #' @param save whether to save results to file
 #' @param exp_path path for current set of model runs
 #' @return raster of modeled wind damage values
@@ -873,7 +873,7 @@ expos_damage <- function(hurricane, inflection_angle, protect, save=TRUE,
 #' if coordinates are lat/long; otherwise lat/long is assumed if X values 
 #' are between -180 and 180 and Y values are between -90 and 90.
 #' @param filename name of input raster file
-#' @param lat_long whether coordinate system is latitude/longitude (degrees)
+#' @param lat_long whether coordinate system is latitude/longitude
 #' @param console whether to display results in console
 #' @param exp_path path for current set of model runs
 #' @return a string containing summary information
@@ -963,7 +963,7 @@ expos_summarize <- function(filename, lat_long=NULL, console=TRUE,
 #' boundary files, and color palette. 
 #' @param filename name of input raster file
 #' @param title plot title
-#' @param lat_long whether coordinate system is latitude/longitude (degrees)
+#' @param lat_long whether coordinate system is latitude/longitude
 #' @param h_units horizontal units
 #' @param v_units vertical units
 #' @param vector whether to display vectory boundary files

@@ -9,7 +9,7 @@ expos_summarize(filename, lat_long = NULL, console = TRUE, exp_path = NULL)
 \arguments{
 \item{filename}{name of input raster file}
 
-\item{lat_long}{whether coordinate system is latitude/longitude (degrees)}
+\item{lat_long}{whether coordinate system is latitude/longitude}
 
 \item{console}{whether to display results in console}
 

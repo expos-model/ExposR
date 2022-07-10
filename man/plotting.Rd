@@ -20,7 +20,7 @@ expos_plot(
 
 \item{title}{plot title}
 
-\item{lat_long}{whether coordinate system is latitude/longitude (degrees)}
+\item{lat_long}{whether coordinate system is latitude/longitude}
 
 \item{h_units}{horizontal units}
 

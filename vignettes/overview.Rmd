@@ -10,7 +10,7 @@ vignette: >
 
 ## EXPOS Model
 
-The EXPOS model uses a digital elevation model (dem) to estimate exposed and
+The EXPOS model uses a digital elevation model (DEM) to estimate exposed and
 protected areas for a given hurricane wind direction and inflection angle. 
 The resulting topograhic exposure maps can be combined with output from the 
 HURRECON model to estimate hurricane wind damage across a region.
@@ -40,12 +40,12 @@ the odds that these sites are protected.
 2. The <i>expos_damage</i> function estimates regional hurricane damage where
 topographic exposure at each location is determined by peak wind direction. If 
 a location is protected, the enhanced Fujita scale (EF) rating from HURRECON 
-is reduced by a specified amount (number of EF ratings). This function requires 
-a hurricane GeoTiff file created by HURRECON, exposure files created by EXPOS 
-for the eight cardinal wind directions (N, NE, E, etc), and a reprojection file 
-in CSV format (<i>reproject.csv</i>) that contains lat/long coordinates for the 
-lower left and upper right corners of the digital elevation model (variables: 
-<i>name</i>, <i>lat_0</i>, <i>lon_0</i>, <i>lat_1</i>, <i>lon_1</i>).
+is reduced by a specified number of EF ratings. This function requires a hurricane 
+GeoTiff file created by HURRECON, exposure files created by EXPOS for the eight 
+cardinal wind directions (N, NE, E, etc), and a reprojection file in CSV format 
+(<i>reproject.csv</i>) that contains lat/long coordinates for the lower left and 
+upper right corners of the digital elevation model (variables: <i>name</i>, 
+<i>lat_0</i>, <i>lon_0</i>, <i>lat_1</i>, <i>lon_1</i>).
 
 The output file is a raster file in GeoTiff format with the following values:
 0 = missing, 1 = no damage, 2 = EF0 damage, 3 = EF1 damage, 4 = EF2 damage, 
@@ -131,7 +131,7 @@ expos_set_path("c:/expos/wach_30m")
 expos_get_path()
 
 expos_model(wind_direction=135, inflection_angle=6)
-expos_damage("AL1938-06", inflection_angle=6, protect=2)
+expos_damage(hurricane="AL1938-06", inflection_angle=6, protect=2)
 
 expos_summarize("dem")
 

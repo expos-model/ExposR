@@ -27,7 +27,7 @@ expos_damage(
 
 \item{inflection_angle}{inflection angle (degrees)}
 
-\item{lat_long}{whether coordinate system is latitude/longitude (degrees)}
+\item{lat_long}{whether coordinate system is latitude/longitude}
 
 \item{orient}{map orientation (degrees)}
 
@@ -37,8 +37,8 @@ expos_damage(
 
 \item{hurricane}{hurricane name (as it appears in tif file)}
 
-\item{protect}{how much to reduce damage in protected areas (Fujita 
-scale ratings)}
+\item{protect}{how much to reduce damage in protected areas (number of 
+Fujita scale ratings)}
 }
 \value{
 raster of modeled exposure values

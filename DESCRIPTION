@@ -1,11 +1,11 @@
 Package: ExposR
-Title: Models Topopgrahic Exposure to Hurricane Winds
+Title: Models Topographic Exposure to Hurricane Winds
 Version: 1.0
 Date: 2022-07-10
 Authors@R: c( person("Emery", "Boose", role = c("aut", "cre"),
                       email = "boose@fas.harvard.edu"),
               person("President and Fellows of Harvard College", role = "cph"))
-Description: The EXPOS model uses a digital elevation model (dem) to estimate 
+Description: The EXPOS model uses a digital elevation model (DEM) to estimate 
     exposed and protected areas for a given hurricane wind direction and 
     inflection angle. The resulting topograhic exposure maps can be combined 
     with output from the HURRECON model to estimate hurricane wind damage 

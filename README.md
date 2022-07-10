@@ -1,13 +1,13 @@
 ## EXPOS Model
 
-The EXPOS model uses a digital elevation model (dem) to estimate exposed and
+The EXPOS model uses a digital elevation model (DEM) to estimate exposed and
 protected areas for a given hurricane wind direction and inflection angle. 
 The resulting topograhic exposure maps can be combined with output from the 
 HURRECON model to estimate hurricane wind damage across a region.
 
 EXPOS contains two main functions:
 
-1. The <i>expos_model</i> function estmates topopgrahic exposure for a specified
+1. The <i>expos_model</i> function estimates topographic exposure for a specified
 wind direction and inflection angle. The input file is assumed to be a raster of 
 elevation values in GeoTiff format with missing values represented by zero. Cells 
 may be rectangular. The user can specify if coordinates are lat/long; otherwise 
@@ -30,12 +30,12 @@ the odds that these sites are protected.
 2. The <i>expos_damage</i> function estimates regional hurricane damage where
 topographic exposure at each location is determined by peak wind direction. If 
 a location is protected, the enhanced Fujita scale (EF) rating from HURRECON 
-is reduced by a specified amount (number of EF ratings). This function requires 
-a hurricane GeoTiff file created by HURRECON, exposure files created by EXPOS 
-for the eight cardinal wind directions (N, NE, E, etc), and a reprojection file 
-in CSV format (<i>reproject.csv</i>) that contains lat/long coordinates for the 
-lower left and upper right corners of the digital elevation model (variables: 
-<i>name</i>, <i>lat_0</i>, <i>lon_0</i>, <i>lat_1</i>, <i>lon_1</i>).
+is reduced by a specified number of EF ratings. This function requires a hurricane 
+GeoTiff file created by HURRECON, exposure files created by EXPOS for the eight 
+cardinal wind directions (N, NE, E, etc), and a reprojection file in CSV format 
+(<i>reproject.csv</i>) that contains lat/long coordinates for the lower left and 
+upper right corners of the digital elevation model (variables: <i>name</i>, 
+<i>lat_0</i>, <i>lon_0</i>, <i>lat_1</i>, <i>lon_1</i>).
 
 The output file is a raster file in GeoTiff format with the following values:
 0 = missing, 1 = no damage, 2 = EF0 damage, 3 = EF1 damage, 4 = EF2 damage, 
@@ -74,7 +74,7 @@ be specified in degrees.
 The user specifies a directory (<i>exp_path</i>) for a given study area. Input and 
 output files are stored on the following subdirectories of this directory:
 
-```{r}
+```
 exp_path/dem
 exp_path/exposure
 exp_path/damage
@@ -92,7 +92,7 @@ To run the model, run <i>expos.R</i> (R) or <i>expos.py</i> (Python).
 
 The R version may also be installed as an R package using the devtools package:
 
-```{r}	
+```
 devtools::install_github("expos-model/ExposR")
 ```
 
@@ -101,7 +101,7 @@ function.
 
 ## Model Functions
 
-```{r}	
+```
 expos_set_path
 expos_get_path
 expos_model
@@ -130,12 +130,12 @@ The <i>expos_plot</i> function creates a plot of a specified raster file.
 
 ## Examples
 
-```{r}
+```
 expos_set_path("c:/expos/wach_30m")
 expos_get_path()
 
 expos_model(wind_direction=135, inflection_angle=6)
-expos_damage("AL1938-06", inflection_angle=6, protect=2)
+expos_damage(hurricane="AL1938-06", inflection_angle=6, protect=2)
 
 expos_summarize("dem")
 

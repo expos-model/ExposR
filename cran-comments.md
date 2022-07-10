@@ -27,4 +27,3 @@ There was 1 NOTE: New submission.
 ## Test environments
 * local Windows 10, R 4.2.0
 * GitHub Actions: mac, windows, ubuntu
-
