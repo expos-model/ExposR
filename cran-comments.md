@@ -1,7 +1,8 @@
 ## Resubmission
 This is a resubmission.
 
-Example was updated to run faster.
+Description was updated to use single quotes for software names
+and to remove extra spaces.
 
 ## Notes
 Messages are sent to the console with message.
