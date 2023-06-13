@@ -27,12 +27,12 @@
 
 exp_env <- new.env(parent=emptyenv())
 
-#' get_path returns the path for the current set of model runs.
+#' get_exp_path returns the path for the current set of model runs.
 #' If not set, an error message is displayed.
 #' @return current path
 #' @noRd
 
-get_path <- function() {
+get_exp_path <- function() {
     # display message if not set
     if (!exists("exp_path", envir=exp_env)) {
         stop("Path not set. Please use expos_set_path.", call. = FALSE)
@@ -76,19 +76,39 @@ get_subdirectory <- function(filename) {
     return(subdir)
 }
 
+#' check_raster_value checks to see if the specified raster layer
+#' contains the specified value.
+#' @param raster name of raster
+#' @param layer number of layer
+#' @param value value to check
+#' @return whether raster layer contains value (TRUE or FALSE)
+#' @noRd
+
+check_raster_value <- function(raster, layer, value) {
+    vv <- terra::unique(raster[[layer]])
+    
+    for (i in 1:nrow(vv)) {
+        if (vv[i, 1] == value) {
+            return(TRUE)
+        }
+    }
+
+    return(FALSE)
+}
+
 #' check_lat_long tries to determine if the raster coordinate system
 #' is latitude/longitude in degrees.  It returns TRUE if X values are 
 #' between -180 and 180 and Y values are between -90 and 90; otherwise
 #' it returns FALSE.
-#' @param xmn minimum X value
-#' @param xmx maximum X value
-#' @param ymn minimum Y value
-#' @param ymx maximum Y value
+#' @param xmin minimum X value
+#' @param xmax maximum X value
+#' @param ymin minimum Y value
+#' @param ymax maximum Y value
 #' @return whether coordinates are lat/long (TRUE or FALSE)
 #' @noRd
 
-check_lat_long <- function(xmn, xmx, ymn, ymx) {
-    if (xmn >= -180 && xmx <= 180 && ymn >= -90 && ymx <= 90) {
+check_lat_long <- function(xmin, xmax, ymin, ymax) {
+    if (xmin >= -180 && xmax <= 180 && ymin >= -90 && ymax <= 90) {
         return(TRUE)
     } else {
         return(FALSE)
@@ -171,7 +191,7 @@ get_transposed_wind_direction <- function(wdir) {
 
 west_north_west <- function(wind_direction, inflection_angle, t_dir, lat_long) {
     # get path
-    exp_path <- get_path()
+    exp_path <- get_exp_path()
     
     # convert 1 degree of latitude to meters
     deg2meters <- 111195
@@ -179,25 +199,25 @@ west_north_west <- function(wind_direction, inflection_angle, t_dir, lat_long) {
     # read DEM file in GeoTiff format
     dem_file <- paste(exp_path, "/dem/dem.tif", sep="")
     check_file_exists(dem_file)
-    dem_r <- raster::raster(dem_file)
+    dem_r <- terra::rast(dem_file)
   
     # get number of rows & columns
-    nrows <- dim(dem_r)[1]
-    ncols <- dim(dem_r)[2]
+    nrows <- terra::nrow(dem_r)
+    ncols <- terra::ncol(dem_r)
 
     # get extent
-    xmn <- raster::extent(dem_r)[1]
-    xmx <- raster::extent(dem_r)[2]
-    ymn <- raster::extent(dem_r)[3]
-    ymx <- raster::extent(dem_r)[4]
+    xmin <- terra::ext(dem_r)[1]
+    xmax <- terra::ext(dem_r)[2]
+    ymin <- terra::ext(dem_r)[3]
+    ymax <- terra::ext(dem_r)[4]
   
     # calculate cell dimensions
-    cell_x <- (xmx-xmn)/ncols
-    cell_y <- (ymx-ymn)/nrows
+    cell_x <- (xmax-xmin)/ncols
+    cell_y <- (ymax-ymin)/nrows
 
     # adjust if lat/long
     if (lat_long == TRUE) {
-        lat_mid <- ymn + (ymx-ymn)/2
+        lat_mid <- ymin + (ymax-ymin)/2
         cell_x <- cell_x*deg2meters*cos(lat_mid*pi/180)
         cell_y <- cell_y*deg2meters
     }
@@ -215,18 +235,18 @@ west_north_west <- function(wind_direction, inflection_angle, t_dir, lat_long) {
         rr <- dem_r
 
     } else if (row_order == FALSE && col_order == TRUE) {
-        rr <- raster::flip(dem_r, direction="y")
+        rr <- terra::flip(dem_r, direction="vertical")
 
     } else if (row_order == TRUE && col_order == FALSE) {
-        rr <- raster::flip(dem_r, direction="x")
+        rr <- terra::flip(dem_r, direction="horizontal")
 
     } else if (row_order == FALSE && col_order == FALSE) {
-        xx  <- raster::flip(dem_r, direction="y")
-        rr <- raster::flip(xx, direction="x")
+        xx  <- terra::flip(dem_r, direction="vertical")
+        rr <- terra::flip(xx, direction="horizontal")
     }
 
     # create dem matrix
-    dem_m <- raster::as.matrix(rr)
+    dem_m <- terra::as.matrix(rr, wide=TRUE)
 
     # create exposure array
     expos_m <- matrix(0, nrows, ncols)
@@ -312,26 +332,26 @@ west_north_west <- function(wind_direction, inflection_angle, t_dir, lat_long) {
     zz <- mask * expos_m
 
     # create raster
-    rr <- raster::raster(nrows=nrows, ncols=ncols, xmn=xmn, xmx=xmx, 
-        ymn=ymn, ymx=ymx, vals=zz)
+    rr <- terra::rast(nrows=nrows, ncols=ncols, xmin=xmin, xmax=xmax, 
+        ymin=ymin, ymax=ymax, vals=zz)
 
     # flip raster as needed
     if (row_order == TRUE && col_order == TRUE) {
         expos_r <- rr
 
     } else if (row_order == FALSE && col_order == TRUE) {
-        expos_r <- raster::flip(rr, direction="y")
+        expos_r <- terra::flip(rr, direction="vertical")
 
     } else if (row_order == TRUE && col_order == FALSE) {
-        expos_r <- raster::flip(rr, direction="x")
+        expos_r <- terra::flip(rr, direction="horizontal")
 
     } else if (row_order == FALSE && col_order == FALSE) {
-        xx  <- raster::flip(rr, direction="y")
-        expos_r <- raster::flip(xx, direction="x")
+        xx  <- terra::flip(rr, direction="vertical")
+        expos_r <- terra::flip(xx, direction="horizontal")
     }
 
     # copy coordinate reference system from dem
-    raster::crs(expos_r) <- raster::crs(dem_r)
+    terra::crs(expos_r) <- terra::crs(dem_r)
 
     # return modeled values as raster
     invisible(expos_r)
@@ -350,7 +370,7 @@ west_north_west <- function(wind_direction, inflection_angle, t_dir, lat_long) {
 
 north_north_west <- function(wind_direction, inflection_angle, t_dir, lat_long) {
     # get path
-    exp_path <- get_path()
+    exp_path <- get_exp_path()
     
     # convert 1 degree of latitude to meters
     deg2meters <- 111195
@@ -358,25 +378,25 @@ north_north_west <- function(wind_direction, inflection_angle, t_dir, lat_long) 
     # read dem file in GeoTiff format
     dem_file <- paste(exp_path, "/dem/dem.tif", sep="")
     check_file_exists(dem_file)
-    dem_r <- raster::raster(dem_file)
+    dem_r <- terra::rast(dem_file)
   
     # get number of rows & columns
-    nrows <- dim(dem_r)[1]
-    ncols <- dim(dem_r)[2]
+    nrows <- terra::nrow(dem_r)
+    ncols <- terra::ncol(dem_r)
 
     # get extent
-    xmn <- raster::extent(dem_r)[1]
-    xmx <- raster::extent(dem_r)[2]
-    ymn <- raster::extent(dem_r)[3]
-    ymx <- raster::extent(dem_r)[4]
+    xmin <- terra::ext(dem_r)[1]
+    xmax <- terra::ext(dem_r)[2]
+    ymin <- terra::ext(dem_r)[3]
+    ymax <- terra::ext(dem_r)[4]
   
     # calculate cell dimensions
-    cell_x <- (xmx-xmn)/ncols
-    cell_y <- (ymx-ymn)/nrows
+    cell_x <- (xmax-xmin)/ncols
+    cell_y <- (ymax-ymin)/nrows
 
     # adjust if lat/long
     if (lat_long == TRUE) {
-        lat_mid <- ymn + (ymx-ymn)/2
+        lat_mid <- ymin + (ymax-ymin)/2
         cell_x <- cell_x*deg2meters*cos(lat_mid*pi/180)
         cell_y <- cell_y*deg2meters
     }
@@ -394,18 +414,18 @@ north_north_west <- function(wind_direction, inflection_angle, t_dir, lat_long) 
         rr <- dem_r
 
     } else if (row_order == FALSE && col_order == TRUE) {
-        rr <- raster::flip(dem_r, direction="y")
+        rr <- terra::flip(dem_r, direction="vertical")
 
     } else if (row_order == TRUE && col_order == FALSE) {
-        rr <- raster::flip(dem_r, direction="x")
+        rr <- terra::flip(dem_r, direction="horizontal")
 
     } else if (row_order == FALSE && col_order == FALSE) {
-        xx  <- raster::flip(dem_r, direction="y")
-        rr <- raster::flip(xx, direction="x")
+        xx  <- terra::flip(dem_r, direction="vertical")
+        rr <- terra::flip(xx, direction="horizontal")
     }
 
     # create dem matrix
-    dem_m <- raster::as.matrix(rr)
+    dem_m <- terra::as.matrix(rr, wide=TRUE)
   
     # create exposure array
     expos_m <- matrix(0, nrows, ncols)
@@ -490,26 +510,26 @@ north_north_west <- function(wind_direction, inflection_angle, t_dir, lat_long) 
     zz <- mask * expos_m
 
     # create raster
-    rr <- raster::raster(nrows=nrows, ncols=ncols, xmn=xmn, xmx=xmx, 
-        ymn=ymn, ymx=ymx, vals=zz)
+    rr <- terra::rast(nrows=nrows, ncols=ncols, xmin=xmin, xmax=xmax, 
+        ymin=ymin, ymax=ymax, vals=zz)
 
     # flip raster as needed
     if (row_order == TRUE && col_order == TRUE) {
         expos_r <- rr
 
     } else if (row_order == FALSE && col_order == TRUE) {
-        expos_r <- raster::flip(rr, direction="y")
+        expos_r <- terra::flip(rr, direction="vertical")
 
     } else if (row_order == TRUE && col_order == FALSE) {
-        expos_r <- raster::flip(rr, direction="x")
+        expos_r <- terra::flip(rr, direction="horizontal")
 
     } else if (row_order == FALSE && col_order == FALSE) {
-        xx  <- raster::flip(rr, direction="y")
-        expos_r <- raster::flip(xx, direction="x")
+        xx  <- terra::flip(rr, direction="vertical")
+        expos_r <- terra::flip(xx, direction="horizontal")
     }
 
     # copy coordinate reference system from dem
-    raster::crs(expos_r) <- raster::crs(dem_r)
+    terra::crs(expos_r) <- terra::crs(dem_r)
 
     # return modeled values as raster
     invisible(expos_r)
@@ -595,7 +615,7 @@ expos_model <- function(wind_direction, inflection_angle, lat_long=NULL, orient=
     if (!is.null(exp_path)) {
         expos_set_path(exp_path)
     } else {
-        exp_path <- get_path()
+        exp_path <- get_exp_path()
     }
 
     # announcement
@@ -615,32 +635,32 @@ expos_model <- function(wind_direction, inflection_angle, lat_long=NULL, orient=
     }
 
     # read dem file in GeoTiff format
-    dem_path <- paste(exp_path, "/dem/dem.tif", sep="")
-    check_file_exists(dem_path)
-    dem_r <- raster::raster(dem_path)
+    dem_file <- paste(exp_path, "/dem/dem.tif", sep="")
+    check_file_exists(dem_file)
+    dem_r <- terra::rast(dem_file)
  
     # get number of rows & columns
-    nrows <- dim(dem_r)[1]
-    ncols <- dim(dem_r)[2]
+    nrows <- terra::nrow(dem_r)
+    ncols <- terra::ncol(dem_r)
 
     # get extent
-    xmn <- raster::extent(dem_r)[1]
-    xmx <- raster::extent(dem_r)[2]
-    ymn <- raster::extent(dem_r)[3]
-    ymx <- raster::extent(dem_r)[4]
+    xmin <- terra::ext(dem_r)[1]
+    xmax <- terra::ext(dem_r)[2]
+    ymin <- terra::ext(dem_r)[3]
+    ymax <- terra::ext(dem_r)[4]
  
     # calculate cell dimensions
-    cell_x <- (xmx-xmn)/ncols
-    cell_y <- (ymx-ymn)/nrows
+    cell_x <- (xmax-xmin)/ncols
+    cell_y <- (ymax-ymin)/nrows
 
     # check for lat/long
     if (is.null(lat_long)) {
-        lat_long <- check_lat_long(xmn, xmx, ymn, ymx)
+        lat_long <- check_lat_long(xmin, xmax, ymin, ymax)
     }
 
     # adjust if lat/long
     if (lat_long == TRUE) {
-        lat_mid <- ymn + (ymx-ymn)/2
+        lat_mid <- ymin + (ymax-ymin)/2
         cell_x <- cell_x*deg2meters*cos(lat_mid*pi/180)
         cell_y <- cell_y*deg2meters
     }
@@ -672,8 +692,8 @@ expos_model <- function(wind_direction, inflection_angle, lat_long=NULL, orient=
         expos_file = paste(exp_path, "/exposure/expos-", formatC(wind_direction, width=3, flag="0"), "-", 
             formatC(inflection_angle, width=2, flag="0"), ".tif", sep="")
 
-        rgdal::setCPLConfigOption("GDAL_PAM_ENABLED", "FALSE")
-        raster::writeRaster(expos_r, expos_file, overwrite=TRUE)
+        terra::writeRaster(expos_r, expos_file, overwrite=TRUE, 
+            gdal=c("GDAL_PAM_ENABLED", "FALSE"))
     
         message(paste("\nSaving to", expos_file))
     }
@@ -709,7 +729,7 @@ expos_damage <- function(hurricane, inflection_angle, protect, save=TRUE,
     if (!is.null(exp_path)) {
         expos_set_path(exp_path)
     } else {
-        exp_path <- get_path()
+        exp_path <- get_exp_path()
     }
 
     # announcement
@@ -729,33 +749,34 @@ expos_damage <- function(hurricane, inflection_angle, protect, save=TRUE,
         expos_file <- paste(exp_path, "/exposure/expos-", formatC(wind_direction, width=3, flag="0"), "-", 
             formatC(inflection_angle, width=2, flag="0"), ".tif", sep="")
     
-        ee_r[[i]] <- raster::raster(expos_file)
+        ee_r[[i]] <- terra::rast(expos_file)
     }
 
     # read dem file
     dem_file <- paste(exp_path, "/dem/dem.tif", sep="")
-    dem_r <- raster::raster(dem_file)
+    dem_r <- terra::rast(dem_file)
 
-    dem_rows <- dim(dem_r)[1]
-    dem_cols <- dim(dem_r)[2]
+    dem_rows <- terra::nrow(dem_r)
+    dem_cols <- terra::ncol(dem_r)
 
-    dem_xmn <- raster::extent(dem_r)[1]
-    dem_xmx <- raster::extent(dem_r)[2]
-    dem_ymn <- raster::extent(dem_r)[3]
-    dem_ymx <- raster::extent(dem_r)[4]
+    dem_xmin <- terra::ext(dem_r)[1]
+    dem_xmax <- terra::ext(dem_r)[2]
+    dem_ymin <- terra::ext(dem_r)[3]
+    dem_ymax <- terra::ext(dem_r)[4]
 
     # read hurrecon file
     hur_file <- paste(exp_path, "/damage/", hurricane, ".tif", sep="")
-    ff_r <- raster::raster(hur_file, 2)  # enhanced Fujita scale
-    cc_r <- raster::raster(hur_file, 4)  # cardinal wind direction (1-8)
+    hur_r <- terra::rast(hur_file)
+    ff_r <- hur_r[[2]]  # enhanced Fujita scale
+    cc_r <- hur_r[[4]]  # cardinal wind direction (1-8)
 
-    hur_rows <- dim(ff_r)[1]
-    hur_cols <- dim(ff_r)[2]
+    hur_rows <- terra::nrow(ff_r)
+    hur_cols <- terra::ncol(ff_r)
 
-    hur_xmn <- raster::extent(ff_r)[1]
-    hur_xmx <- raster::extent(ff_r)[2]
-    hur_ymn <- raster::extent(ff_r)[3]
-    hur_ymx <- raster::extent(ff_r)[4]
+    hur_xmin <- terra::ext(ff_r)[1]
+    hur_xmax <- terra::ext(ff_r)[2]
+    hur_ymin <- terra::ext(ff_r)[3]
+    hur_ymax <- terra::ext(ff_r)[4]
 
     # read reproject file
     reproject_file <- paste(exp_path, "/damage/reproject.csv", sep="")
@@ -770,12 +791,12 @@ expos_damage <- function(hurricane, inflection_angle, protect, save=TRUE,
     ee_m <- list()
 
     for (i in 1:8) {
-        ee_m[[i]] <- raster::as.matrix(ee_r[[i]])
+        ee_m[[i]] <- terra::as.matrix(ee_r[[i]], wide=TRUE)
     }
 
-    dem_m <- raster::as.matrix(dem_r)
-    ff_m  <- raster::as.matrix(ff_r)
-    cc_m  <- raster::as.matrix(cc_r)
+    dem_m <- terra::as.matrix(dem_r, wide=TRUE)
+    ff_m  <- terra::as.matrix(ff_r, wide=TRUE)
+    cc_m  <- terra::as.matrix(cc_r, wide=TRUE)
 
     # create damage matrix (0 = missing, 1 = no damage)
     dam_m <- dem_m
@@ -796,8 +817,8 @@ expos_damage <- function(hurricane, inflection_angle, protect, save=TRUE,
                 hur_y <- lat_1 - (lat_1 - lat_0)*(i - 0.5)/dem_rows
 
                 # get row & col in hurricane file (note: row 1 = top of raster)
-                hur_row <- ceiling(hur_rows - hur_rows*(hur_y - hur_ymn)/(hur_ymx - hur_ymn))
-                hur_col <- ceiling(hur_cols*(hur_x - hur_xmn)/(hur_xmx - hur_xmn))
+                hur_row <- ceiling(hur_rows - hur_rows*(hur_y - hur_ymin)/(hur_ymax - hur_ymin))
+                hur_col <- ceiling(hur_cols*(hur_x - hur_xmin)/(hur_xmax - hur_xmin))
 
                 # # check if in Hurrecon output
                 if (hur_row >= 1 && hur_row <= hur_rows && hur_col >= 1 && hur_col <= hur_cols) {
@@ -840,19 +861,19 @@ expos_damage <- function(hurricane, inflection_angle, protect, save=TRUE,
     }
 
     # create raster of modeled results
-    dam_r <- raster::raster(nrows=dem_rows, ncols=dem_cols, xmn=dem_xmn, xmx=dem_xmx, 
-        ymn=dem_ymn, ymx=dem_ymx, vals=dam_m)
+    dam_r <- terra::rast(nrows=dem_rows, ncols=dem_cols, xmin=dem_xmin, xmax=dem_xmax, 
+        ymin=dem_ymin, ymax=dem_ymax, vals=dam_m)
 
     # copy coordinate reference system from dem
-    raster::crs(dam_r) <- raster::crs(dem_r)
+    terra::crs(dam_r) <- terra::crs(dem_r)
 
     if (save == TRUE) {
         # save modeled results in GeoTiff file
         dam_file <- paste(exp_path, "/damage/", hurricane, "-damage-", 
             formatC(inflection_angle, width=2, flag="0"), "-", protect, ".tif", sep="")
         
-        rgdal::setCPLConfigOption("GDAL_PAM_ENABLED", "FALSE")
-        raster::writeRaster(dam_r, dam_file, overwrite=TRUE)
+        terra::writeRaster(dam_r, dam_file, overwrite=TRUE, 
+            gdal=c("GDAL_PAM_ENABLED", "FALSE"))
 
         message(paste("\nSaving to", dam_file))
     }
@@ -880,14 +901,12 @@ expos_damage <- function(hurricane, inflection_angle, protect, save=TRUE,
 #' @export
 #' @rdname summarizing
 
-expos_summarize <- function(filename, lat_long=NULL, console=TRUE, 
-    exp_path=NULL) {
-    
+expos_summarize <- function(filename, lat_long=NULL, console=TRUE, exp_path=NULL) {
     # get path
     if (!is.null(exp_path)) {
         expos_set_path(exp_path)
     } else {
-        exp_path <- get_path()
+        exp_path <- get_exp_path()
     }
 
     # announcement
@@ -902,45 +921,55 @@ expos_summarize <- function(filename, lat_long=NULL, console=TRUE,
     # read file in GeoTiff format
     file_path <- paste(exp_path, subdir, filename, ".tif", sep="")
     check_file_exists(file_path)
-    rr <- raster::raster(file_path)
+    rr <- terra::rast(file_path)
 
     # get number of rows & columns
-    nrows <- dim(rr)[1]
-    ncols <- dim(rr)[2]
+    nrows <- terra::nrow(rr)
+    ncols <- terra::ncol(rr)
 
     # get extent
-    xmn <- raster::extent(rr)[1]
-    xmx <- raster::extent(rr)[2]
-    ymn <- raster::extent(rr)[3]
-    ymx <- raster::extent(rr)[4]
+    xmin <- terra::ext(rr)[1]
+    xmax <- terra::ext(rr)[2]
+    ymin <- terra::ext(rr)[3]
+    ymax <- terra::ext(rr)[4]
   
     # calculate cell dimensions
-    cell_x <- (xmx-xmn)/ncols
-    cell_y <- (ymx-ymn)/nrows
+    cell_x <- (xmax-xmin)/ncols
+    cell_y <- (ymax-ymin)/nrows
 
     # check for lat/long
     if (is.null(lat_long)) {
-        lat_long <- check_lat_long(xmn, xmx, ymn, ymx)
-    }
+        lat_long <- check_lat_long(xmin, xmax, ymin, ymax)
+     }
+
+    b_units <- ""
+    c_units <- ""
+    v_units <- ""
 
     # adjust if lat/long
     if (lat_long == TRUE) {
-        lat_mid <- ymn + (ymx-ymn)/2
+        lat_mid <- ymin + (ymax-ymin)/2
         cell_x <- cell_x*deg2meters*cos(lat_mid*pi/180)
         cell_y <- cell_y*deg2meters
+
+        b_units <- " degrees"
+        c_units <- " meters"
+        if (filename == "dem") {
+            v_units <- " meters"
+        }
     }
 
     # get min & max values
-    val_min <- raster::minValue(rr)
-    val_max <- raster::maxValue(rr)
+    val_min <- terra::minmax(rr)[1]
+    val_max <- terra::minmax(rr)[2]
 
     # create display string
     st <- paste("Rows: ", nrows, "  Columns: ", ncols, "\n", sep="")
-    st <- paste(st, "Northing: ", round(ymn, 6), " to ", round(ymx, 6), "\n", sep="")
-    st <- paste(st, "Easting: ", round(xmn, 6), " to ", round(xmx, 6), "\n", sep="")
-    st <- paste(st, "Cell height: ", round(cell_y, 6), "\n", sep="")
-    st <- paste(st, "Cell width: ", round(cell_x, 6), "\n", sep="")
-    st <- paste(st, "Values: ", round(val_min, 6), " to ", round(val_max, 6), "\n", sep="")
+    st <- paste(st, "Northing: ", round(ymin, 6), " to ", round(ymax, 6), b_units, "\n", sep="")
+    st <- paste(st, "Easting: ", round(xmin, 6), " to ", round(xmax, 6), b_units, "\n", sep="")
+    st <- paste(st, "Cell height: ", round(cell_y), c_units, "\n", sep="")
+    st <- paste(st, "Cell width: ", round(cell_x), c_units, "\n", sep="")
+    st <- paste(st, "Values: ", round(val_min), " to ", round(val_max), v_units, "\n", sep="")
     
     # display results in console
     if (console == TRUE) {
@@ -980,7 +1009,7 @@ expos_plot <- function(filename, title="", lat_long=NULL, h_units="meters",
     if (!is.null(exp_path)) {
         expos_set_path(exp_path)
     } else {
-        exp_path <- get_path()
+        exp_path <- get_exp_path()
     }
 
     message("... Plotting raster ...")
@@ -991,26 +1020,27 @@ expos_plot <- function(filename, title="", lat_long=NULL, h_units="meters",
     # read file in GeoTiff format
     file_path <- paste(exp_path, subdir, filename, ".tif", sep="")
     check_file_exists(file_path)
-    rr <- raster::raster(file_path)
+    rr <- terra::rast(file_path)
 
     # get vector boundary file
     if (vector == TRUE) {
         boundaries_file <- paste(exp_path, "/vector/boundaries.shp", sep="")
         check_file_exists(boundaries_file)
-        boundaries <- rgdal::readOGR(boundaries_file)
+        boundaries <- terra::vect(boundaries_file)
     }
 
-    rr_min <- raster::minValue(rr)
-    rr_max <- raster::maxValue(rr)
+    rr_min <- terra::minmax(rr)[1]
+    rr_max <- terra::minmax(rr)[2]
+    rr_unique <- terra::unique(rr)
 
     # check for lat/long
     if (is.null(lat_long)) {
-        xmn <- raster::extent(rr)[1]
-        xmx <- raster::extent(rr)[2]
-        ymn <- raster::extent(rr)[3]
-        ymx <- raster::extent(rr)[4]
+        xmin <- terra::ext(rr)[1]
+        xmax <- terra::ext(rr)[2]
+        ymin <- terra::ext(rr)[3]
+        ymax <- terra::ext(rr)[4]
 
-        lat_long <- check_lat_long(xmn, xmx, ymn, ymx)
+        lat_long <- check_lat_long(xmin, xmax, ymin, ymax)
     }
 
     # adjust units
@@ -1019,23 +1049,50 @@ expos_plot <- function(filename, title="", lat_long=NULL, h_units="meters",
         v_units = "meters"
     }
 
+    # get labels & colors
+    if (grepl("expos", filename)) {
+        exp_all_labs <- c("", "protected", "exposed")
+        exp_all_cols <- c("white", "grey", "green")
+
+        exp_labs <- c(exp_all_labs[rr_min+1])
+        exp_cols <- c(exp_all_cols[rr_min+1])
+
+        if (rr_max > rr_min) {
+            for (i in (rr_min+1):(rr_max)) {
+                if (check_raster_value(rr, 1, i)) {
+                    exp_labs <- append(exp_labs, exp_all_labs[i+1])
+                    exp_cols <- append(exp_cols, exp_all_cols[i+1])
+                }
+            }
+        }
+
+    } else if (grepl("damage", filename)) {
+        dam_all_labs <- c("", "None", "EF0", "EF1", "EF2", "EF3", "EF4", "EF5")
+        dam_all_cols <- c("white", "grey", "purple", "blue", "green", "yellow", "orange", "red")
+
+        dam_labs <- c(dam_all_labs[rr_min+1])
+        dam_cols <- c(dam_all_cols[rr_min+1])
+
+        if (rr_max > rr_min) {
+            for (i in (rr_min+1):(rr_max)) {
+                if (check_raster_value(rr, 1, i)) {
+                    dam_labs <- append(dam_labs, dam_all_labs[i+1])
+                    dam_cols <- append(dam_cols, dam_all_cols[i+1])
+                }
+            }
+        }
+    }
+
     # default palettes
     if (length(colormap) == 1) {
         if (colormap == "default") {
             # exposure map
             if (grepl("expos", filename)) {
-                cmap <- c("white", "grey", "blue")
+                cmap <- exp_cols
 
             # damage map
             } else if (grepl("damage", filename)) {
-                all_cols <- c("white", "grey", "purple", "blue", "green", "yellow", "orange", "red")
-                cmap <- c(all_cols[rr_min+1])
-
-                if (rr_max > rr_min) {
-                    for (i in (rr_min+2):(rr_max+1)) {
-                        cmap <- append(cmap, all_cols[i])
-                    }
-                }
+                cmap <- dam_cols
 
             # dem, etc
             } else {
@@ -1063,10 +1120,10 @@ expos_plot <- function(filename, title="", lat_long=NULL, h_units="meters",
             title <- "Elevation"
         }
         v_units_str <- paste("  ", v_units, sep="")
-        raster::plot(rr, main=title, xlab=h_units, ylab=h_units,
-            legend.args=list(text=v_units_str, line=1), col=cmap)
+        terra::plot(rr, main=title, xlab=h_units, ylab=h_units, type="continuous",
+            plg=list(title=v_units_str), col=cmap)
         if (vector == TRUE) {
-            raster::plot(boundaries, add=TRUE)
+            terra::plot(boundaries, add=TRUE)
         }
     
     } else if (grepl("expos", filename)) {
@@ -1074,13 +1131,10 @@ expos_plot <- function(filename, title="", lat_long=NULL, h_units="meters",
             x <- strsplit(filename, "-")[[1]]
             title <- paste("Exposure ", x[2], "-", x[3], sep="")
         }
-        vals <- c(0, 1, 2)
-        labs <- c("", "Pro", "Exp")
-        arg <- list(at=vals, labels=labs)
-        raster::plot(rr, main=title, xlab=h_units, ylab=h_units, axis.args=arg, 
-            legend.args=list(text='  Exposure', line=1), col=cmap)
+         terra::plot(rr, main=title, xlab=h_units, ylab=h_units, type="classes",
+            plg=list(title='  Exposure'), levels=exp_labs, all_levels=TRUE, col=cmap)
         if (vector == TRUE) {
-            raster::plot(boundaries, add=TRUE)
+            terra::plot(boundaries, add=TRUE)
         }
 
     } else if (grepl("damage", filename)) {
@@ -1088,22 +1142,19 @@ expos_plot <- function(filename, title="", lat_long=NULL, h_units="meters",
             x <- strsplit(filename, "-")[[1]]
             title <- paste(x[1], "-", x[2], " Damage ", x[4], "-", x[5],sep="")
         }
-        vals <- c(0, 1, 2, 3, 4, 5, 6, 7)
-        labs <- c("", "None", "EF0", "EF1", "EF2", "EF3", "EF4", "EF5")
-        raster::plot(rr, main=title, xlab=h_units, ylab=h_units,
-            axis.args=list(at=vals, labels=labs), 
-            legend.args=list(text='  EF Scale', line=1), col=cmap)
+        terra::plot(rr, main=title, xlab=h_units, ylab=h_units, type="classes",
+            plg=list(title='  EF Scale'), levels=dam_labs, all_levels=TRUE, col=cmap)
         if (vector == TRUE) {
-            raster::plot(boundaries, add=TRUE)
+            terra::plot(boundaries, add=TRUE)
         }
     
     } else {
         if (title == "") {
             title <- filename
         }
-        raster::plot(rr, main=title, xlab=h_units, ylab=h_units, col=cmap)
+        terra::plot(rr, main=title, xlab=h_units, ylab=h_units, col=cmap)
         if (vector == TRUE) {
-            raster::plot(boundaries, add=TRUE)
+            terra::plot(boundaries, add=TRUE)
         }
     }
 }

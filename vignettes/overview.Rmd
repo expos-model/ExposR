@@ -1,6 +1,6 @@
 ---
 title: "Overview of ExposR"
-date: "10 July 2022"
+date: "12 June 2023"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Overview of ExposR}
@@ -20,13 +20,13 @@ EXPOS contains two main functions:
 1. The <i>expos_model</i> function estmates topopgrahic exposure for a specified
 wind direction and inflection angle. The input file is assumed to be a raster of 
 elevation values in GeoTiff format with missing values represented by zero. Cells 
-may be rectangular. The user can specify if coordinates are lat/long; otherwise 
-lat/long is assumed if X values are between -180 and 180 and Y values are between
--90 and 90. If coordinates are lat/long, horizontal and vertical units are assumed 
-to be degrees and meters, respectively; otherwise horizontal and vertical units 
-must be the same. Columns are assumed to be closely aligned with true North (0 
-degrees); if not, the map orientation (azimuth) must be specified in degrees. 
-The name of the input file is assumed to be "dem.tif".
+may be rectangular. The user can specify if coordinates are latitude/longitude; 
+otherwise latitude/longitude is assumed if X values are between -180 and 180 and 
+Y values are between -90 and 90. If coordinates are latitude/longitude, horizontal 
+and vertical units are assumed to be degrees and meters, respectively; otherwise 
+horizontal and vertical units must be the same. Columns are assumed to be closely 
+aligned with true North (0 degrees); if not, the map orientation (azimuth) must be 
+specified in degrees. The name of the input file is assumed to be "dem.tif".
 
 The output file is a raster file in GeoTiff format with the following values: 
 0 = missing data, 1 = protected, 2 = exposed. Output files are named 
@@ -43,8 +43,8 @@ a location is protected, the enhanced Fujita scale (EF) rating from HURRECON
 is reduced by a specified number of EF ratings. This function requires a hurricane 
 GeoTiff file created by HURRECON, exposure files created by EXPOS for the eight 
 cardinal wind directions (N, NE, E, etc), and a reprojection file in CSV format 
-(<i>reproject.csv</i>) that contains lat/long coordinates for the lower left and 
-upper right corners of the digital elevation model (variables: <i>name</i>, 
+(<i>reproject.csv</i>) that contains latitude/longitude coordinates for the lower 
+left and upper right corners of the digital elevation model (variables: <i>name</i>, 
 <i>lat_0</i>, <i>lon_0</i>, <i>lat_1</i>, <i>lon_1</i>).
 
 The output file is a raster file in GeoTiff format with the following values:
@@ -52,6 +52,11 @@ The output file is a raster file in GeoTiff format with the following values:
 5 = EF3 damage, 6 = EF4 damage, 7 = EF5 damage. Output files are named 
 "hhhh-damage-yy-z.tif" where hhhh is the hurricane ID, yy is the inflection 
 angle, and z is the reduction in EF rating for protected areas.
+
+Note: for large areas, best results will be obtained by converting the DEM to
+latitude/longitude coordinates (if necessary) before running <i>expos_model</i>
+and <i>expos_damage</i> and then converting the resulting damage maps to the
+desired map projection.
 
 ## Getting Started
 
@@ -134,6 +139,8 @@ expos_model(wind_direction=90, inflection_angle=6)
 expos_damage(hurricane="AL1938-06", inflection_angle=6, protect=2)
 
 expos_summarize("dem")
+expos_summarize("expos-090-06")
+expos_summarize("AL1938-06-damage-06-2")
 
 expos_plot("dem")
 expos_plot("expos-090-06")

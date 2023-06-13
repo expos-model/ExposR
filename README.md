@@ -43,17 +43,23 @@ The output file is a raster file in GeoTiff format with the following values:
 "hhhh-damage-yy-z.tif" where hhhh is the hurricane ID, yy is the inflection 
 angle, and z is the reduction in EF rating for protected areas.
 
+Note: for large areas, best results will be obtained by converting the DEM to
+latitude/longitude coordinates (if necessary) before running <i>expos_model</i>
+and <i>expos_damage</i> and then converting the resulting damage maps to the
+desired map projection.
+
 EXPOS is available in both R (ExposR) and Python (ExposPython) versions. 
 The model is an updated version of the original EXPOS model written in Borland 
 Pascal for use with Idrisi (see below for details).
 
-Please note: both versions are currently under development and subject to change.
+Note: both versions are under development and subject to change.
 
 ## Getting Started
 
 Here are the basic steps for using the model. Please see below for more details.
 
-1. Download the R or Python version of the model from GitHub.
+1. Download the R or Python version of the model from GitHub. The R version is also
+available on CRAN as ExposR.
 2. Create a directory for a particular study area with subdirectories as described 
 below.
 3. Copy the digital elevation file to the <i>dem</i> subdirectory and rename it 
@@ -90,7 +96,8 @@ are stored on the <i>vector</i> subdirectory.
 
 To run the model, run <i>expos.R</i> (R) or <i>expos.py</i> (Python). 
 
-The R version may also be installed as an R package using the devtools package:
+The R version can be installed as an R package directly from CRAN. It can also be
+installed from Github using the devtools package:
 
 ```
 devtools::install_github("expos-model/ExposR")
@@ -138,6 +145,8 @@ expos_model(wind_direction=90, inflection_angle=6)
 expos_damage(hurricane="AL1938-06", inflection_angle=6, protect=2)
 
 expos_summarize("dem")
+expos_summarize("expos-090-06")
+expos_summarize("AL1938-06-damage-06-2")
 
 expos_plot("dem")
 expos_plot("expos-090-06")
