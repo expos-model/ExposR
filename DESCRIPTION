@@ -1,7 +1,7 @@
 Package: ExposR
 Title: Models Topographic Exposure to Hurricane Winds
 Version: 1.2
-Date: 2024-11-05
+Date: 2024-11-09
 Authors@R: c( person("Emery", "Boose", role = c("aut", "cre"),
                       email = "boose@fas.harvard.edu"),
               person("President and Fellows of Harvard College", role = "cph"))

@@ -1,5 +1,5 @@
 ## Updates
-Tests updated to pass waldo::compare.
+Unit tests updated.
 
 ## R CMD check results
 There were no ERRORS, WARNINGS, or NOTES.
